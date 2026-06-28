@@ -277,12 +277,18 @@ body { font-family:'Inter', system-ui, -apple-system, sans-serif; -webkit-font-s
     localStorage.setItem('sb2-prayers',JSON.stringify(prayers));
     localStorage.setItem('sb2-current',JSON.stringify(currentPrayer));
     localStorage.setItem('sb2-state',JSON.stringify({currentSubIndex,currentRepeat}));
+    // persist library IDs for folder files so selections survive reloads
+    try{
+      const libMeta = library.filter(l=>l.handle).map(l=>({id:l.id, name:l.name}));
+      localStorage.setItem('sb2-library', JSON.stringify(libMeta));
+    }catch{}
   }
   function loadState(){
     try{
       const p=localStorage.getItem('sb2-prayers'); if(p) prayers=JSON.parse(p);
       const c=localStorage.getItem('sb2-current'); if(c) currentPrayer=JSON.parse(c);
       const s=localStorage.getItem('sb2-state'); if(s){ const st=JSON.parse(s); currentSubIndex=st.currentSubIndex||0; currentRepeat=st.currentRepeat||0; }
+      const lib=localStorage.getItem('sb2-library'); if(lib){ const arr=JSON.parse(lib); library = arr.map(o=>({id:o.id, name:o.name, url:'', handle:null})); }
       // migrate old data: ensure countOnBeads exists
       [currentPrayer, ...prayers].forEach(pr=>{ if(pr && pr.subs) pr.subs.forEach(su=>{ if(su.countOnBeads===undefined) su.countOnBeads=true; if(su.pauseAfter===undefined) su.pauseAfter=1; }); });
     }catch{}
@@ -295,6 +301,14 @@ body { font-family:'Inter', system-ui, -apple-system, sans-serif; -webkit-font-s
   function renderPrayerList(){
     prayerList.innerHTML='';
     currentPrayer.subs.forEach((sub,idx)=>{
+      // Insert zone BETWEEN cards (Option 2)
+      if(idx>0){
+        const insert=document.createElement('div');
+        insert.className='insert-zone relative h-[10px] -my-1 group cursor-pointer select-none';
+        insert.innerHTML=`<div class="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-white/8 group-hover:bg-[var(--accent)]/60 transition"></div><button class="insert-btn absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-zinc-900 border border-white/15 text-[14px] leading-none grid place-items-center opacity-0 group-hover:opacity-100 transition text-zinc-400 hover:text-[var(--accent)] hover:border-[var(--accent)]/60 shadow-[0_2px_8px_rgba(0,0,0,0.4)]" title="Insert here">+</button>`;
+        insert.onclick=()=>{ currentPrayer.subs.splice(idx,0,{id:crypto.randomUUID(), name:'New invocation', audioId:'', repeats:3, countOnBeads:true, pauseAfter:1}); renderPrayerList(); saveState(); updateBeads(); };
+        prayerList.appendChild(insert);
+      }
       const card=document.createElement('div');
       card.className='prayer-card bg-zinc-900/70 rounded-xl p-3 flex items-center gap-2.5 flex-wrap sm:flex-nowrap';
       card.dataset.id=sub.id;
@@ -330,18 +344,23 @@ body { font-family:'Inter', system-ui, -apple-system, sans-serif; -webkit-font-s
       card.querySelector('.del').onclick=()=>{currentPrayer.subs.splice(idx,1); renderPrayerList(); saveState(); updateBeads();};
     });
     if(window.sortable) window.sortable.destroy();
-    window.sortable=Sortable.create(prayerList,{handle:'.drag-handle',animation:180,ghostClass:'opacity-40',onEnd:e=>{const [m]=currentPrayer.subs.splice(e.oldIndex,1); currentPrayer.subs.splice(e.newIndex,0,m); renderPrayerList(); saveState();}});
+    window.sortable=Sortable.create(prayerList,{draggable:'.prayer-card',handle:'.drag-handle',animation:180,ghostClass:'opacity-40',onEnd:()=>{
+      const ids=[...prayerList.querySelectorAll('.prayer-card')].map(c=>c.dataset.id);
+      currentPrayer.subs=ids.map(id=>currentPrayer.subs.find(s=>s.id===id)).filter(Boolean);
+      renderPrayerList(); saveState();
+    }});
     updateActiveGlow();
     applyLockState();
   }
 
   function applyLockState(){
     const disable = locked;
-    document.querySelectorAll('#prayerList input, #prayerList select, #prayerList button.del, #addSub, #prayerTitle, #newPrayer, #savePrayer, #deletePrayer').forEach(el=>{ if(el) el.disabled=disable; });
+    document.querySelectorAll('#prayerList input, #prayerList select, #prayerList button.del, #prayerList .insert-btn, #addSub, #prayerTitle, #newPrayer, #savePrayer, #deletePrayer').forEach(el=>{ if(el) el.disabled=disable; });
     if(window.sortable) window.sortable.option('disabled', disable);
     lockBtn.textContent = disable ? '🔓 Unlock' : '🔒 Lock';
     lockBtn.classList.toggle('bg-[var(--accent)]/20', disable);
     prayerList.classList.toggle('opacity-60', disable);
+    document.querySelectorAll('.insert-zone').forEach(z=>z.style.pointerEvents = disable ? 'none' : 'auto');
   }
 
   // --- Folder Storage ---
@@ -360,9 +379,9 @@ body { font-family:'Inter', system-ui, -apple-system, sans-serif; -webkit-font-s
           const name=entry.name.replace(/\.[^/.]+$/,'');
           const key=name.toLowerCase();
           let item = byName.get(key);
-          if(item && item.handle){
-            URL.revokeObjectURL(item.url);
-            item.url=url; item.handle=entry;
+          if(item){
+            if(item.url) URL.revokeObjectURL(item.url);
+            item.url=url; item.handle=entry; item.name=name;
           } else {
             item={id:crypto.randomUUID(), name, url, handle:entry};
           }
