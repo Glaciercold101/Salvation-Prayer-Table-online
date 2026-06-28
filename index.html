@@ -32,17 +32,22 @@ body { font-family:'Inter', system-ui, -apple-system, sans-serif; -webkit-font-s
 }
 .prayer-card.active-prayer {
   border-color: var(--accent) !important;
-  box-shadow: 0 0 0 2px var(--accent), 0 0 0 4px rgba(212,165,95,0.2), 0 0 24px rgba(180,132,37,0.65);
+  box-shadow: 0 0 0 2px var(--accent), 0 0 0 4px color-mix(in srgb, var(--accent) 20%, transparent), 0 0 24px color-mix(in srgb, var(--accent) 65%, transparent);
   animation: glowPulse 2s ease-in-out infinite;
   transform: translateZ(0);
 }
 @keyframes glowPulse {
-  0%,100% { box-shadow: 0 0 0 2px var(--accent), 0 0 0 4px rgba(212,165,95,0.2), 0 0 20px rgba(180,132,37,0.55); }
-  50% { box-shadow: 0 0 0 2px var(--accent), 0 0 0 6px rgba(212,165,95,0.35), 0 0 32px rgba(180,132,37,0.9); }
+  0%,100% { box-shadow: 0 0 0 2px var(--accent), 0 0 0 4px color-mix(in srgb, var(--accent) 20%, transparent), 0 0 20px color-mix(in srgb, var(--accent) 55%, transparent); }
+  50% { box-shadow: 0 0 0 2px var(--accent), 0 0 0 6px color-mix(in srgb, var(--accent) 35%, transparent), 0 0 32px color-mix(in srgb, var(--accent) 90%, transparent); }
+}
+.no-glow .prayer-card.active-prayer {
+  animation: none !important;
+  box-shadow: none !important;
+  border-width: 2px;
 }
 
 .bead { fill:#24242b; transition: fill 0.4s, filter 0.4s; }
-.bead.active { fill: var(--accent); filter: drop-shadow(0 0 8px rgba(180,132,37,0.85)) drop-shadow(0 0 14px rgba(180,132,37,0.5)); }
+.bead.active { fill: var(--accent); filter: drop-shadow(0 0 8px color-mix(in srgb, var(--accent) 85%, transparent)) drop-shadow(0 0 14px color-mix(in srgb, var(--accent) 50%, transparent)); }
 
 .resize-handle {
   position:absolute; bottom:8px; right:8px; width:22px; height:22px;
@@ -105,7 +110,10 @@ body { font-family:'Inter', system-ui, -apple-system, sans-serif; -webkit-font-s
     <aside id="rightPanel" class="xl:w-[42%] xl:max-w-[580px] w-full bg-[#0b0b0e]/85 xl:border-l border-white/[0.06] backdrop-blur-2xl flex flex-col xl:h-screen">
       <div class="px-5 sm:px-6 py-4 border-b border-white/5 flex items-center justify-between sticky top-0 bg-[#0b0b0e]/90 backdrop-blur z-10">
         <h2 class="text-[13px] font-semibold tracking-[0.18em] text-zinc-400">PRAYER BUILDER</h2>
-        <button id="widgetToggle" class="text-[12px] px-3 py-1.5 rounded-lg bg-white/[0.06] hover:bg-white/10 border border-white/10 transition active:scale-95">Widget Mode</button>
+        <div class="flex items-center gap-2">
+          <button id="lockBtn" class="text-[12px] px-3 py-1.5 rounded-lg bg-white/[0.06] hover:bg-white/10 border border-white/10 transition active:scale-95" title="Lock configuration">🔒 Lock</button>
+          <button id="widgetToggle" class="text-[12px] px-3 py-1.5 rounded-lg bg-white/[0.06] hover:bg-white/10 border border-white/10 transition active:scale-95">Widget Mode</button>
+        </div>
       </div>
 
       <div class="flex-1 overflow-y-auto px-5 sm:px-6 py-6">
@@ -139,10 +147,11 @@ body { font-family:'Inter', system-ui, -apple-system, sans-serif; -webkit-font-s
 
         <!-- Save / Load -->
         <div class="mt-8 pt-6 border-t border-white/5">
-          <div class="grid grid-cols-3 gap-2.5">
+          <div class="grid grid-cols-4 gap-2.5">
             <button id="newPrayer" class="py-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-white/10 text-[13px] font-medium transition">New Prayer</button>
             <button id="savePrayer" class="py-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-white/10 text-[13px] font-medium transition">Save Prayer</button>
-            <select id="loadPrayer" class="bg-zinc-900 border border-white/10 rounded-xl px-3 text-[13px] outline-none focus:border-[var(--accent)]/50"></select>
+            <select id="loadPrayer" class="col-span-1 bg-zinc-900 border border-white/10 rounded-xl px-3 text-[13px] outline-none focus:border-[var(--accent)]/50"></select>
+            <button id="deletePrayer" class="py-2.5 rounded-xl bg-zinc-900 hover:bg-red-900/30 border border-white/10 text-[13px] font-medium transition" title="Delete selected prayer">–</button>
           </div>
           <div class="grid grid-cols-2 gap-2.5 mt-2.5">
             <button id="exportPrayer" class="py-2 rounded-xl bg-[var(--accent)]/15 hover:bg-[var(--accent)]/25 border border-[var(--accent)]/30 text-[12px] font-medium text-[#d4a55f] transition">Export Current</button>
@@ -203,11 +212,14 @@ body { font-family:'Inter', system-ui, -apple-system, sans-serif; -webkit-font-s
   const newPrayer=$('#newPrayer'), savePrayer=$('#savePrayer'), loadPrayer=$('#loadPrayer');
   const exportPrayer=$('#exportPrayer'), importPrayer=$('#importPrayer'), importFile=$('#importFile');
   const themeBtn=$('#themeBtn'), resizeHandle=$('#resizeHandle');
+  const lockBtn=$('#lockBtn');
+  const deletePrayer=$('#deletePrayer');
 
   // State
   let library=[];
   let dirHandle=null;
   let prayers=[];
+  let locked=false;
   let currentPrayer={id:'p1', name:'Morning Prayer', subs:[
     {id:'s1', name:'Lord Jesus Christ, have mercy', audioId:'', repeats:33, countOnBeads:true, pauseAfter:1},
     {id:'s2', name:'Glory to the Father', audioId:'', repeats:3, countOnBeads:true, pauseAfter:1},
@@ -320,6 +332,16 @@ body { font-family:'Inter', system-ui, -apple-system, sans-serif; -webkit-font-s
     if(window.sortable) window.sortable.destroy();
     window.sortable=Sortable.create(prayerList,{handle:'.drag-handle',animation:180,ghostClass:'opacity-40',onEnd:e=>{const [m]=currentPrayer.subs.splice(e.oldIndex,1); currentPrayer.subs.splice(e.newIndex,0,m); renderPrayerList(); saveState();}});
     updateActiveGlow();
+    applyLockState();
+  }
+
+  function applyLockState(){
+    const disable = locked;
+    document.querySelectorAll('#prayerList input, #prayerList select, #prayerList button.del, #addSub, #prayerTitle, #newPrayer, #savePrayer, #deletePrayer').forEach(el=>{ if(el) el.disabled=disable; });
+    if(window.sortable) window.sortable.option('disabled', disable);
+    lockBtn.textContent = disable ? '🔓 Unlock' : '🔒 Lock';
+    lockBtn.classList.toggle('bg-[var(--accent)]/20', disable);
+    prayerList.classList.toggle('opacity-60', disable);
   }
 
   // --- Folder Storage ---
@@ -327,15 +349,28 @@ body { font-family:'Inter', system-ui, -apple-system, sans-serif; -webkit-font-s
     folderInfo.textContent = dirHandle ? `${dirHandle.name} • ${library.length}` : (library.length?`${library.length} files`:'');
   }
   async function loadFromDirectory(handle){
-    dirHandle=handle; library=[];
+    dirHandle=handle;
+    // keep existing IDs by name so selections survive rescans
+    const byName = new Map(library.map(l=>[l.name.toLowerCase(), l]));
+    const newLibrary = library.filter(l=>!l.handle); // preserve manually uploaded files
     for await (const entry of handle.values()){
       if(entry.kind==='file' && /\.(mp3|wav|m4a|ogg|aac|flac|mp4|webm)$/i.test(entry.name)){
         try{
           const file=await entry.getFile(); const url=URL.createObjectURL(file);
-          library.push({id:crypto.randomUUID(), name:entry.name.replace(/\.[^/.]+$/,''), url, handle:entry});
+          const name=entry.name.replace(/\.[^/.]+$/,'');
+          const key=name.toLowerCase();
+          let item = byName.get(key);
+          if(item && item.handle){
+            URL.revokeObjectURL(item.url);
+            item.url=url; item.handle=entry;
+          } else {
+            item={id:crypto.randomUUID(), name, url, handle:entry};
+          }
+          newLibrary.push(item);
         }catch{}
       }
     }
+    library = newLibrary;
     updateFolderInfo(); renderPrayerList(); saveState();
   }
   async function initFolder(){
@@ -371,7 +406,7 @@ body { font-family:'Inter', system-ui, -apple-system, sans-serif; -webkit-font-s
 
   // --- Playback ---
   function updateControls(){ const label=isPlaying?'Pause':'Play'; playBtn.textContent=label; document.querySelector('[data-w="play"]').textContent=label; }
-  function updateActiveGlow(){ document.querySelectorAll('.prayer-card').forEach((card,i)=>{ card.classList.toggle('active-prayer', isPlaying && i===currentSubIndex); }); }
+  function updateActiveGlow(){ document.querySelectorAll('.prayer-card').forEach((card,i)=>{ const isActive = isPlaying && i===currentSubIndex; card.classList.toggle('active-prayer', isActive); if(isActive){ setTimeout(()=>card.scrollIntoView({behavior:'smooth', block:'center', inline:'nearest'}), 60); } }); }
   function rebuildBeadsIfNeeded(){
     const sub=currentPrayer.subs[currentSubIndex];
     const counting=sub && sub.countOnBeads!==false;
@@ -396,7 +431,7 @@ body { font-family:'Inter', system-ui, -apple-system, sans-serif; -webkit-font-s
     if(currentRepeat < sub.repeats) currentRepeat++;
     updateActiveGlow(); updateBeads();
     const track=library.find(l=>l.id===sub.audioId);
-    if(track?.url){ audio.src=track.url; audio.play().catch(()=>{}); } else { audio.pause(); setTimeout(()=>{ if(isPlaying) onEnded(); },650); }
+    if(track?.url){ audio.src=track.url; audio.play().catch(()=>{}); } else { audio.pause(); setTimeout(()=>{ if(isPlaying) onEnded(); },700); }
   }
   function onEnded(){
     if(!isPlaying) return;
@@ -423,7 +458,7 @@ body { font-family:'Inter', system-ui, -apple-system, sans-serif; -webkit-font-s
     }
     saveState();
   }
-  let lastEnded=0; audio.onended=()=>{ const now=performance.now(); if(now-lastEnded<80) return; lastEnded=now; onEnded(); };
+  let lastEnded=0; audio.onended=()=>{ const now=performance.now(); if(now-lastEnded<200) return; lastEnded=now; onEnded(); };
   function togglePlay(){ isPlaying?pause():play(); }
   function play(){ if(!currentPrayer.subs.length) return; isPlaying=true; playCurrent(); updateControls(); }
   function pause(){ isPlaying=false; audio.pause(); updateControls(); updateActiveGlow(); }
@@ -440,6 +475,7 @@ body { font-family:'Inter', system-ui, -apple-system, sans-serif; -webkit-font-s
   newPrayer.onclick=()=>{ const id='p'+Date.now(); currentPrayer={id, name:'New Prayer', subs:[{id:crypto.randomUUID(), name:'New invocation', audioId:'', repeats:3, countOnBeads:true, pauseAfter:1}]}; prayers.push(JSON.parse(JSON.stringify(currentPrayer))); renderPrayersSelect(); loadPrayer.value=id; updatePrayerName(); renderPrayerList(); reset(); saveState(); };
   savePrayer.onclick=()=>{ const idx=prayers.findIndex(p=>p.id===currentPrayer.id); const copy=JSON.parse(JSON.stringify(currentPrayer)); if(idx>=0)prayers[idx]=copy; else prayers.push(copy); renderPrayersSelect(); saveState(); savePrayer.textContent='Saved ✓'; setTimeout(()=>savePrayer.textContent='Save Prayer',1100); };
   loadPrayer.onchange=e=>{ const p=prayers.find(x=>x.id===e.target.value); if(!p) return; currentPrayer=JSON.parse(JSON.stringify(p)); updatePrayerName(); renderPrayerList(); reset(); saveState(); };
+  deletePrayer.onclick=()=>{ const id=loadPrayer.value || currentPrayer.id; if(!id) return; if(!confirm('Delete this prayer?')) return; prayers = prayers.filter(p=>p.id!==id); if(currentPrayer.id===id){ currentPrayer={id:'p'+Date.now(), name:'New Prayer', subs:[]}; } renderPrayersSelect(); saveState(); loadPrayer.value=''; };
   addSub.onclick=()=>{ currentPrayer.subs.push({id:crypto.randomUUID(), name:'New invocation', audioId:'', repeats:3, countOnBeads:true, pauseAfter:1}); renderPrayerList(); saveState(); updateBeads(); };
 
   // Export / Import for sharing
@@ -490,7 +526,12 @@ body { font-family:'Inter', system-ui, -apple-system, sans-serif; -webkit-font-s
   };
 
   // Theme
-  themeBtn.onclick=()=>{ themeIdx=(themeIdx+1)%themes.length; document.documentElement.style.setProperty('--accent',themes[themeIdx]); };
+  themeBtn.onclick=(e)=>{ if(e.shiftKey){ document.body.classList.toggle('no-glow'); localStorage.setItem('sb2-noglow', document.body.classList.contains('no-glow')?'1':'0'); return; } themeIdx=(themeIdx+1)%themes.length; document.documentElement.style.setProperty('--accent',themes[themeIdx]); localStorage.setItem('sb2-theme', themeIdx); };
+  try{ const t=localStorage.getItem('sb2-theme'); if(t!==null){ themeIdx=parseInt(t); document.documentElement.style.setProperty('--accent',themes[themeIdx]); } if(localStorage.getItem('sb2-noglow')==='1') document.body.classList.add('no-glow'); }catch{}
+
+  // Lock
+  lockBtn.onclick=()=>{ locked=!locked; applyLockState(); localStorage.setItem('sb2-locked', locked?'1':'0'); };
+  try{ locked = localStorage.getItem('sb2-locked')==='1'; }catch{}
 
   // --- Widget Mode ---
   widgetToggle.onclick=()=>{ widgetOverlay.classList.remove('hidden'); app.classList.add('opacity-0','pointer-events-none'); forestBg.style.opacity='1'; };
