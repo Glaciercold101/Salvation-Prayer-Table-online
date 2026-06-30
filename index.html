@@ -73,7 +73,7 @@ body { font-family:'Inter', system-ui, -apple-system, sans-serif; -webkit-font-s
   <div class="mx-auto w-full max-w-[1720px] px-3 sm:px-6 lg:px-10 xl:px-14 2xl:px-20">
     <div id="app" class="relative z-10 min-h-screen w-full flex flex-col xl:flex-row transition-opacity duration-300">
     <!-- LEFT PRAYER VIEW -->
-    <section class="flex-1 xl:w-[58%] min-h-[100dvh] flex flex-col px-6 sm:px-10 lg:px-16 py-8">
+    <section class="flex-1 xl:w-[58%] min-h-[100dvh] flex flex-col px-6 sm:px-10 lg:px-14 py-6">
       <!-- Top Bar - BIGGER TIME AND DAY -->
       <div class="flex justify-between items-start w-full">
         <div>
@@ -87,7 +87,7 @@ body { font-family:'Inter', system-ui, -apple-system, sans-serif; -webkit-font-s
       </div>
 
       <!-- Title - BIGGER WITH DYNAMIC PRAYER NAME -->
-      <div class="mt-14 sm:mt-20">
+      <div class="mt-10 sm:mt-14">
         <h1 class="font-playfair leading-[0.82] tracking-tight text-[clamp(44px,9vw,72px)] text-[#B48425]">Salvation<br>Beads</h1>
         <div id="prayerName" class="mt-4 font-playfair text-[22px] tracking-wide text-[#B48425] font-medium">Morning Prayer</div>
         <div id="subPrayerName" class="mt-1.5 font-playfair text-[30px] leading-tight tracking-wide text-zinc-100">Lord Jesus Christ, have mercy</div>
@@ -108,7 +108,7 @@ body { font-family:'Inter', system-ui, -apple-system, sans-serif; -webkit-font-s
     </section>
 
     <!-- RIGHT BUILDER PANEL -->
-    <aside id="rightPanel" class="xl:w-[42%] xl:max-w-[580px] w-full bg-[#0b0b0e]/85 xl:border-l border-white/[0.06] backdrop-blur-2xl flex flex-col xl:h-screen">
+    <aside id="rightPanel" class="xl:w-[42%] xl:max-w-[560px] w-full bg-[#0b0b0e]/85 xl:border-l border-white/[0.06] backdrop-blur-2xl flex flex-col xl:h-screen">
       <div class="px-5 sm:px-6 py-4 border-b border-white/5 flex items-center justify-between sticky top-0 bg-[#0b0b0e]/90 backdrop-blur z-10">
         <h2 class="text-[13px] font-semibold tracking-[0.18em] text-zinc-400">PRAYER BUILDER</h2>
         <div class="flex items-center gap-2">
@@ -117,7 +117,7 @@ body { font-family:'Inter', system-ui, -apple-system, sans-serif; -webkit-font-s
         </div>
       </div>
 
-      <div class="flex-1 overflow-y-auto pl-5 sm:pl-6 pr-3 sm:pr-4 py-6" style="scrollbar-gutter: stable;">
+      <div class="flex-1 overflow-y-auto pl-5 sm:pl-6 pr-3 sm:pr-4 py-4" style="scrollbar-gutter: stable;">
         <!-- Prayer Name -->
         <div class="mb-6">
           <label class="text-[11px] uppercase tracking-widest text-zinc-500">Prayer Name</label>
@@ -136,7 +136,7 @@ body { font-family:'Inter', system-ui, -apple-system, sans-serif; -webkit-font-s
             <button id="rescanFolder" class="hidden px-3.5 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 border border-white/10 text-[13px] transition">Rescan Folder</button>
             <input type="file" id="fileInput" multiple accept=".mp3,.wav,.m4a,.ogg,.aac,.flac,audio/*" class="hidden">
           </div>
-          <p class="text-[11px] text-zinc-500 mt-2.5 leading-snug">Files stay in your folder. We save only a permission handle in IndexedDB — zero duplication, persists after reload.</p>
+          <p class="text-[11px] text-zinc-500 mt-2.5 leading-snug">Files stay in your folder. Export now embeds selected audio as backup inside the JSON.</p>
         </div>
 
         <!-- Sub Prayers -->
@@ -159,6 +159,7 @@ body { font-family:'Inter', system-ui, -apple-system, sans-serif; -webkit-font-s
             <button id="importPrayer" class="py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-white/10 text-[12px] font-medium transition">Import JSON</button>
             <input type="file" id="importFile" accept=".json,application/json" class="hidden">
           </div>
+          <label class="flex items-center gap-2 mt-2.5 text-[11px] text-zinc-500 cursor-pointer select-none"><input type="checkbox" id="embedAudioToggle" class="w-3 h-3 accent-[var(--accent)]"> Embed audio files in export (backup - makes JSON larger)</label>
           <p class="text-[11px] text-zinc-600 mt-3">Drag ⋮⋮ to reorder. Active prayer glows gold when playing.</p>
         </div>
       </div>
@@ -213,6 +214,7 @@ body { font-family:'Inter', system-ui, -apple-system, sans-serif; -webkit-font-s
   const prayerList=$('#prayerList'), addSub=$('#addSub');
   const newPrayer=$('#newPrayer'), savePrayer=$('#savePrayer'), loadPrayer=$('#loadPrayer');
   const exportPrayer=$('#exportPrayer'), importPrayer=$('#importPrayer'), importFile=$('#importFile');
+  const embedAudioToggle=$('#embedAudioToggle');
   const themeBtn=$('#themeBtn'), resizeHandle=$('#resizeHandle');
   const lockBtn=$('#lockBtn');
   const deletePrayer=$('#deletePrayer');
@@ -259,7 +261,7 @@ body { font-family:'Inter', system-ui, -apple-system, sans-serif; -webkit-font-s
     sub.textContent='COUNT'; svg.appendChild(sub);
     container.appendChild(svg); container._beads=beads; container._counter=txt;
   }
-  createBeads(beadsLeft,340,33); createBeads(beadsWidget,260,33);
+  createBeads(beadsLeft,320,33); createBeads(beadsWidget,260,33);
 
   // --- Clock - BIGGER ---
   function updateClock(){
@@ -500,15 +502,46 @@ body { font-family:'Inter', system-ui, -apple-system, sans-serif; -webkit-font-s
   addSub.onclick=()=>{ currentPrayer.subs.push({id:crypto.randomUUID(), name:'New invocation', audioId:'', repeats:3, countOnBeads:true, pauseAfter:1}); renderPrayerList(); saveState(); updateBeads(); };
 
   // Export / Import for sharing
-  exportPrayer.onclick=()=>{
-    const data = JSON.stringify(currentPrayer, null, 2);
-    const blob = new Blob([data], {type:'application/json'});
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    const safeName = (currentPrayer.name||'prayer').replace(/[^a-z0-9]+/gi,'_');
-    a.download = safeName + '.sbprayer.json';
-    document.body.appendChild(a); a.click(); a.remove();
-    setTimeout(()=>URL.revokeObjectURL(a.href), 1000);
+  exportPrayer.onclick=async ()=>{
+    const originalText=exportPrayer.textContent;
+    const embed = embedAudioToggle?.checked;
+    exportPrayer.disabled=true; 
+    exportPrayer.textContent= embed ? 'Embedding audio…' : 'Exporting…';
+    try{
+      const usedIds=[...new Set(currentPrayer.subs.map(s=>s.audioId).filter(Boolean))];
+      const audioLibrary=[];
+      for(const id of usedIds){
+        const item=library.find(l=>l.id===id);
+        if(!item) continue;
+        if(embed && item.url){
+          try{
+            const res=await fetch(item.url);
+            const blob=await res.blob();
+            const dataUrl=await new Promise(r=>{const fr=new FileReader(); fr.onload=()=>r(fr.result); fr.readAsDataURL(blob);});
+            audioLibrary.push({id:item.id, name:item.name, data:dataUrl, type:blob.type});
+          }catch(e){ console.warn('Failed to embed', item?.name, e); audioLibrary.push({id:item.id, name:item.name}); }
+        }else{
+          // tiny export - just name and id for reference (your original request)
+          audioLibrary.push({id:item.id, name:item.name});
+        }
+      }
+      const exportObj={ version:3, exportedAt:new Date().toISOString(), prayer:JSON.parse(JSON.stringify(currentPrayer)), audioLibrary, embedded:embed };
+      const data=JSON.stringify(exportObj,null,2);
+      const blob=new Blob([data],{type:'application/json'});
+      const a=document.createElement('a');
+      a.href=URL.createObjectURL(blob);
+      const safeName=(currentPrayer.name||'prayer').replace(/[^a-z0-9]+/gi,'_');
+      a.download=safeName + (embed ? '_with_audio' : '') + '.sbprayer.json';
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+      exportPrayer.textContent=`Exported ✓ (${audioLibrary.length} ${embed?'audio':'names'})`;
+      setTimeout(()=>exportPrayer.textContent=originalText,1800);
+    }catch(err){
+      alert('Export failed: '+err.message);
+      exportPrayer.textContent=originalText;
+    }finally{
+      exportPrayer.disabled=false;
+    }
   };
   importPrayer.onclick=()=> importFile.click();
   importFile.onchange=async e=>{
@@ -516,10 +549,31 @@ body { font-family:'Inter', system-ui, -apple-system, sans-serif; -webkit-font-s
     try{
       const text = await file.text();
       const obj = JSON.parse(text);
-      // support single prayer or array
-      const incoming = Array.isArray(obj) ? obj : [obj];
+      // support v3 with audioLibrary, v2, v1, or array
+      let prayersToImport=[];
+      if(obj.prayer){ prayersToImport=[obj.prayer]; }
+      else if(Array.isArray(obj)){ prayersToImport=obj; }
+      else if(obj.name && obj.subs){ prayersToImport=[obj]; }
+      else { throw new Error('Unrecognized format'); }
+
+      // restore embedded audio first
+      if(obj.audioLibrary && Array.isArray(obj.audioLibrary)){
+        obj.audioLibrary.forEach(a=>{
+          if(!a.id||!a.data) return;
+          let existing=library.find(l=>l.id===a.id);
+          if(existing){
+            if(existing.url && existing.url.startsWith('blob:')){ try{URL.revokeObjectURL(existing.url);}catch{} }
+            existing.url=a.data; existing.name=a.name||existing.name;
+            existing.handle=null;
+          }else{
+            library.push({id:a.id, name:a.name||'restored audio', url:a.data, handle:null});
+          }
+        });
+        updateFolderInfo();
+      }
+
       let imported = 0;
-      incoming.forEach(p=>{
+      prayersToImport.forEach(p=>{
         if(!p || !p.name || !Array.isArray(p.subs)) return;
         // ensure ids and defaults
         p.id = p.id || 'p'+Date.now()+Math.random().toString(16).slice(2);
@@ -541,6 +595,7 @@ body { font-family:'Inter', system-ui, -apple-system, sans-serif; -webkit-font-s
       importPrayer.textContent = `Imported ${imported} ✓`;
       setTimeout(()=>importPrayer.textContent='Import JSON', 1500);
     }catch(err){
+      console.error(err);
       alert('Invalid JSON file');
     }
     e.target.value = '';
