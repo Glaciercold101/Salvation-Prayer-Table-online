@@ -57,8 +57,46 @@ body { font-family:'Inter', system-ui, -apple-system, sans-serif; -webkit-font-s
 }
 .resize-handle:hover { opacity:1; }
 
-::-webkit-scrollbar { width:8px; } ::-webkit-scrollbar-track { background:transparent; } ::-webkit-scrollbar-thumb { background:#2e2e36; border-radius:4px; }
-::-webkit-scrollbar-thumb:hover { background:#3a3a44; }
+
+
+::-webkit-scrollbar { width:24px; height:24px; } 
+::-webkit-scrollbar-track { background:#0a0a0c; } 
+::-webkit-scrollbar-thumb { 
+  background-color:#B48425;
+  border-radius:12px; 
+  border:7px solid #0a0a0c;
+  /* fake grip using inner shadows - works everywhere */
+  box-shadow: 
+    inset 0 1px 0 rgba(0,0,0,0.4),
+    inset 0 -1px 0 rgba(255,255,255,0.15),
+    inset 0 4px 0 #0a0a0c,
+    inset 0 -4px 0 #0a0a0c;
+  min-height: 48px;
+}
+::-webkit-scrollbar-thumb:hover { 
+  background-color:#d4a55f;
+  border:6px solid #0a0a0c;
+}
+::-webkit-scrollbar-thumb:active {
+  background-color:#e6b86e;
+}
+* { scrollbar-width: auto; scrollbar-color: #B48425 #0a0a0c; }
+
+/* BLUE ALTERNATIVE - uncomment to use blue bar
+::-webkit-scrollbar-thumb { 
+  background-color:#3B82F6;
+  border-radius:12px; 
+  border:7px solid #0a0a0c;
+  box-shadow: 
+    inset 0 1px 0 rgba(0,0,0,0.4),
+    inset 0 -1px 0 rgba(255,255,255,0.15),
+    inset 0 4px 0 #0a0a0c,
+    inset 0 -4px 0 #0a0a0c;
+}
+::-webkit-scrollbar-thumb:hover { background-color:#60a5fa; border:6px solid #0a0a0c; }
+* { scrollbar-color: #3B82F6 #0a0a0c; }
+*/
+
 
 @media (max-width: 390px) {
   .prayer-card { padding:0.75rem !important; }
@@ -112,6 +150,8 @@ body { font-family:'Inter', system-ui, -apple-system, sans-serif; -webkit-font-s
       <div class="px-5 sm:px-6 py-4 border-b border-white/5 flex items-center justify-between sticky top-0 bg-[#0b0b0e]/90 backdrop-blur z-10">
         <h2 class="text-[13px] font-semibold tracking-[0.18em] text-zinc-400">PRAYER BUILDER</h2>
         <div class="flex items-center gap-2">
+          <button id="refreshBtn" class="text-[12px] px-3 py-1.5 rounded-lg bg-[var(--accent)]/15 hover:bg-[var(--accent)]/25 border border-[var(--accent)]/30 text-[#d4a55f] transition active:scale-95" title="Refresh library and reload embedded audio">↻ Refresh</button>
+          <button id="purgeBtn" class="text-[12px] px-3 py-1.5 rounded-lg bg-red-900/30 hover:bg-red-800/40 border border-red-700/40 text-red-300 transition active:scale-95" title="Delete all embedded audio from browser cache">🗑 Purge Cache</button>
           <button id="lockBtn" class="text-[12px] px-3 py-1.5 rounded-lg bg-white/[0.06] hover:bg-white/10 border border-white/10 transition active:scale-95" title="Lock configuration">🔒 Lock</button>
           <button id="widgetToggle" class="text-[12px] px-3 py-1.5 rounded-lg bg-white/[0.06] hover:bg-white/10 border border-white/10 transition active:scale-95">Widget Mode</button>
         </div>
@@ -159,7 +199,7 @@ body { font-family:'Inter', system-ui, -apple-system, sans-serif; -webkit-font-s
             <button id="importPrayer" class="py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-white/10 text-[12px] font-medium transition">Import JSON</button>
             <input type="file" id="importFile" accept=".json,application/json" class="hidden">
           </div>
-          <label class="flex items-center gap-2 mt-2.5 text-[11px] text-zinc-500 cursor-pointer select-none"><input type="checkbox" id="embedAudioToggle" class="w-3 h-3 accent-[var(--accent)]"> Embed audio files in export (backup - makes JSON larger)</label>
+          <label class="flex items-center gap-2 mt-2.5 text-[11px] text-zinc-500 select-none"><span class="w-2 h-2 rounded-full bg-[var(--accent)]"></span> Export always includes audio (self-contained JSON)</label>
           <p class="text-[11px] text-zinc-600 mt-3">Drag ⋮⋮ to reorder. Active prayer glows gold when playing.</p>
         </div>
       </div>
@@ -218,6 +258,8 @@ body { font-family:'Inter', system-ui, -apple-system, sans-serif; -webkit-font-s
   const themeBtn=$('#themeBtn'), resizeHandle=$('#resizeHandle');
   const lockBtn=$('#lockBtn');
   const deletePrayer=$('#deletePrayer');
+  const refreshBtn=$('#refreshBtn');
+  const purgeBtn=$('#purgeBtn');
 
   // State
   let library=[];
@@ -277,22 +319,36 @@ body { font-family:'Inter', system-ui, -apple-system, sans-serif; -webkit-font-s
   setInterval(updateClock,1000); updateClock();
 
   // --- Persistence ---
-  function saveState(){
+  async function saveState(){
     localStorage.setItem('sb2-prayers',JSON.stringify(prayers));
     localStorage.setItem('sb2-current',JSON.stringify(currentPrayer));
     localStorage.setItem('sb2-state',JSON.stringify({currentSubIndex,currentRepeat}));
     // persist library IDs for folder files so selections survive reloads
     try{
-      const libMeta = library.filter(l=>l.handle).map(l=>({id:l.id, name:l.name}));
+      const libMeta = library.map(l=>({id:l.id, name:l.name}));
       localStorage.setItem('sb2-library', JSON.stringify(libMeta));
+      // persist embedded audio data separately in IndexedDB
+      const embedded = library.filter(l=>l.url && l.url.startsWith('data:')).map(l=>({id:l.id, name:l.name, url:l.url}));
+      await idbKeyval.set('sb2-audio-data', embedded);
     }catch{}
   }
-  function loadState(){
+  async function loadState(){
     try{
       const p=localStorage.getItem('sb2-prayers'); if(p) prayers=JSON.parse(p);
       const c=localStorage.getItem('sb2-current'); if(c) currentPrayer=JSON.parse(c);
       const s=localStorage.getItem('sb2-state'); if(s){ const st=JSON.parse(s); currentSubIndex=st.currentSubIndex||0; currentRepeat=st.currentRepeat||0; }
       const lib=localStorage.getItem('sb2-library'); if(lib){ const arr=JSON.parse(lib); library = arr.map(o=>({id:o.id, name:o.name, url:'', handle:null})); }
+      // restore embedded audio from IndexedDB
+      try{
+        const embedded = await idbKeyval.get('sb2-audio-data');
+        if(Array.isArray(embedded)){
+          embedded.forEach(e=>{
+            const ex = library.find(l=>l.id===e.id);
+            if(ex){ ex.url = e.url; }
+            else { library.push({id:e.id, name:e.name, url:e.url, handle:null}); }
+          });
+        }
+      }catch{}
       // migrate old data: ensure countOnBeads exists
       [currentPrayer, ...prayers].forEach(pr=>{ if(pr && pr.subs) pr.subs.forEach(su=>{ if(su.countOnBeads===undefined) su.countOnBeads=true; if(su.pauseAfter===undefined) su.pauseAfter=1; }); });
     }catch{}
@@ -323,7 +379,7 @@ body { font-family:'Inter', system-ui, -apple-system, sans-serif; -webkit-font-s
         <div class="flex items-center gap-2 ml-auto">
           <input type="number" min="1" max="100" value="${sub.repeats}" class="repeats w-[56px] bg-zinc-800/80 border border-zinc-700/60 rounded-lg px-2 py-1.5 text-center text-[13px] outline-none">
           <select class="pause w-[54px] bg-zinc-800/80 border border-zinc-700/60 rounded-lg px-1 py-1.5 text-[12px] outline-none" title="Pause after (sec)">${[0,1,2,3,4,5].map(v=>`<option value="${v}" ${sub.pauseAfter===v?'selected':''}>${v}s</option>`).join('')}</select>
-          <label class="flex items-center gap-1 text-[11px] text-zinc-400 cursor-pointer select-none"><input type="checkbox" class="count-toggle" ${sub.countOnBeads!==false?'checked':''}>Count</label>
+          <label class="flex flex-col items-center gap-0.5 cursor-pointer select-none px-1" title="Count on beads"><input type="checkbox" class="count-toggle w-4 h-4 accent-[var(--accent)]" ${sub.countOnBeads!==false?'checked':''}><span class="text-[10px] text-zinc-400 leading-none">Count</span></label>
           <button class="del text-zinc-500 hover:text-red-400 px-1.5 text-[18px] leading-none">×</button>
         </div>`;
       prayerList.appendChild(card);
@@ -390,6 +446,8 @@ body { font-family:'Inter', system-ui, -apple-system, sans-serif; -webkit-font-s
             item={id:crypto.randomUUID(), name, url, handle:entry};
           }
           newLibrary.push(item);
+          // delete any old embedded version — folder file should win
+          try{ await idbKeyval.del('audio:'+item.id); }catch{}
         }catch{}
       }
     }
@@ -411,7 +469,7 @@ body { font-family:'Inter', system-ui, -apple-system, sans-serif; -webkit-font-s
   chooseFolder.onclick=async()=>{ try{ const h=await window.showDirectoryPicker({mode:'read'}); await idbKeyval.set('sb2-dir',h); await loadFromDirectory(h); rescanFolder.classList.remove('hidden'); }catch{} };
   rescanFolder.onclick=()=>{ if(dirHandle) loadFromDirectory(dirHandle); };
   uploadFiles.onclick=()=>fileInput.click();
-  fileInput.onchange=e=>{ [...e.target.files].forEach(f=>{ library.push({id:crypto.randomUUID(), name:f.name.replace(/\.[^/.]+$/,''), url:URL.createObjectURL(f)}); }); updateFolderInfo(); renderPrayerList(); fileInput.value=''; };
+  fileInput.onchange=e=>{ [...e.target.files].forEach(f=>{ library.push({id:crypto.randomUUID(), name:f.name.replace(/\.[^/.]+$/,''), url:URL.createObjectURL(f)}); }); updateFolderInfo(); renderPrayerList(); saveState(); fileInput.value=''; };
 
   // --- Prayer Name Dynamic ---
   function updatePrayerName(){
@@ -454,7 +512,16 @@ body { font-family:'Inter', system-ui, -apple-system, sans-serif; -webkit-font-s
     if(currentRepeat < sub.repeats) currentRepeat++;
     updateActiveGlow(); updateBeads();
     const track=library.find(l=>l.id===sub.audioId);
-    if(track?.url){ audio.src=track.url; audio.play().catch(()=>{}); } else { audio.pause(); setTimeout(()=>{ if(isPlaying) onEnded(); },700); }
+    if(track?.url){ 
+      audio.src=track.url; 
+      audio.currentTime=0;
+      audio.muted=false;
+      audio.load();
+      audio.play().catch(err=>{ console.warn('Audio play failed', err); });
+    } else { 
+      audio.pause(); 
+      setTimeout(()=>{ if(isPlaying) onEnded(); },700); 
+    }
   }
   function onEnded(){
     if(!isPlaying) return;
@@ -504,9 +571,9 @@ body { font-family:'Inter', system-ui, -apple-system, sans-serif; -webkit-font-s
   // Export / Import for sharing
   exportPrayer.onclick=async ()=>{
     const originalText=exportPrayer.textContent;
-    const embed = embedAudioToggle?.checked;
+    const embed = true;
     exportPrayer.disabled=true; 
-    exportPrayer.textContent= embed ? 'Embedding audio…' : 'Exporting…';
+    exportPrayer.textContent='Embedding audio…';
     try{
       const usedIds=[...new Set(currentPrayer.subs.map(s=>s.audioId).filter(Boolean))];
       const audioLibrary=[];
@@ -534,7 +601,7 @@ body { font-family:'Inter', system-ui, -apple-system, sans-serif; -webkit-font-s
       a.download=safeName + (embed ? '_with_audio' : '') + '.sbprayer.json';
       document.body.appendChild(a); a.click(); a.remove();
       setTimeout(()=>URL.revokeObjectURL(a.href),1000);
-      exportPrayer.textContent=`Exported ✓ (${audioLibrary.length} ${embed?'audio':'names'})`;
+      exportPrayer.textContent=`Exported ✓ (${audioLibrary.length} audio)`;
       setTimeout(()=>exportPrayer.textContent=originalText,1800);
     }catch(err){
       alert('Export failed: '+err.message);
@@ -559,14 +626,17 @@ body { font-family:'Inter', system-ui, -apple-system, sans-serif; -webkit-font-s
       // restore embedded audio first
       if(obj.audioLibrary && Array.isArray(obj.audioLibrary)){
         obj.audioLibrary.forEach(a=>{
-          if(!a.id||!a.data) return;
+          if(!a.id) return;
           let existing=library.find(l=>l.id===a.id);
           if(existing){
-            if(existing.url && existing.url.startsWith('blob:')){ try{URL.revokeObjectURL(existing.url);}catch{} }
-            existing.url=a.data; existing.name=a.name||existing.name;
+            if(a.data){
+              if(existing.url && existing.url.startsWith('blob:')){ try{URL.revokeObjectURL(existing.url);}catch{} }
+              existing.url=a.data;
+            }
+            existing.name=a.name||existing.name;
             existing.handle=null;
           }else{
-            library.push({id:a.id, name:a.name||'restored audio', url:a.data, handle:null});
+            library.push({id:a.id, name:a.name||'restored audio', url:a.data||'', handle:null});
           }
         });
         updateFolderInfo();
@@ -583,9 +653,15 @@ body { font-family:'Inter', system-ui, -apple-system, sans-serif; -webkit-font-s
           if(s.pauseAfter===undefined) s.pauseAfter = 1;
           if(!s.repeats) s.repeats = 1;
         });
-        // avoid duplicate id
-        if(prayers.some(x=>x.id===p.id)) p.id = 'p'+Date.now()+Math.random().toString(16).slice(2);
-        prayers.push(p);
+        // avoid duplicate entries — match by id OR name (case-insensitive)
+        const existingIdx = prayers.findIndex(x => x.id===p.id || x.name.trim().toLowerCase()===p.name.trim().toLowerCase());
+        if(existingIdx>=0){
+          // update existing, keep original id to preserve references
+          p.id = prayers[existingIdx].id;
+          prayers[existingIdx] = p;
+        }else{
+          prayers.push(p);
+        }
         currentPrayer = JSON.parse(JSON.stringify(p));
         imported++;
       });
@@ -609,6 +685,75 @@ body { font-family:'Inter', system-ui, -apple-system, sans-serif; -webkit-font-s
   lockBtn.onclick=()=>{ locked=!locked; applyLockState(); localStorage.setItem('sb2-locked', locked?'1':'0'); };
   try{ locked = localStorage.getItem('sb2-locked')==='1'; }catch{}
 
+  // Refresh — reloads embedded audio from IndexedDB and re-scans folder
+  refreshBtn.onclick=async ()=>{
+    const original = refreshBtn.textContent;
+    refreshBtn.disabled = true;
+    refreshBtn.textContent = '↻ Refreshing…';
+    try{
+      // stop playback
+      pause();
+      // If we have a folder, clear old folder entries first to avoid duplicates
+      // (after a page reload, handles are lost, so we must rebuild from scratch)
+      const stored = dirHandle || await idbKeyval.get('sb2-dir');
+      if(stored){
+        // keep only truly embedded/manual files (data: URLs), drop stale blob entries
+        library = library.filter(l => l.url && l.url.startsWith('data:'));
+        const perm = await stored.queryPermission({mode:'read'});
+        if(perm==='granted' || await stored.requestPermission({mode:'read'})==='granted'){
+          await loadFromDirectory(stored);
+        }
+      } else {
+        // no folder — just reload embedded state
+        await loadState();
+      }
+      // refresh UI
+      renderPrayersSelect();
+      renderPrayerList();
+      updatePrayerName();
+      updateBeads();
+      updateFolderInfo();
+      refreshBtn.textContent = '✓ Refreshed';
+    }catch(e){
+      console.error(e);
+      refreshBtn.textContent = 'Error';
+    }finally{
+      setTimeout(()=>{ refreshBtn.textContent = original; refreshBtn.disabled = false; }, 1200);
+    }
+  };
+
+  // Purge All Embedded Cache
+  purgeBtn.onclick=async ()=>{
+    if(!confirm('Delete ALL embedded audio from browser cache? This will force a fresh rebuild from your folder on next Refresh.')) return;
+    const original = purgeBtn.textContent;
+    purgeBtn.disabled = true;
+    purgeBtn.textContent = 'Purging…';
+    try{
+      pause();
+      // delete all audio: keys from IndexedDB
+      const keys = await idbKeyval.keys();
+      let count = 0;
+      for(const k of keys){
+        if(typeof k === 'string' && k.startsWith('audio:')){
+          await idbKeyval.del(k);
+          count++;
+        }
+      }
+      // remove embedded entries from current library
+      library = library.filter(l => !(l.url && l.url.startsWith('data:')));
+      // clear saved library metadata of embedded items
+      await saveState();
+      renderPrayerList();
+      updateFolderInfo();
+      purgeBtn.textContent = `Purged ${count} ✓`;
+    }catch(e){
+      console.error(e);
+      purgeBtn.textContent = 'Error';
+    }finally{
+      setTimeout(()=>{ purgeBtn.textContent = original; purgeBtn.disabled = false; }, 1800);
+    }
+  };
+
   // --- Widget Mode ---
   widgetToggle.onclick=()=>{ widgetOverlay.classList.remove('hidden'); app.classList.add('opacity-0','pointer-events-none'); forestBg.style.opacity='1'; };
   exitWidget.onclick=()=>{ widgetOverlay.classList.add('hidden'); app.classList.remove('opacity-0','pointer-events-none'); forestBg.style.opacity='0'; };
@@ -624,7 +769,17 @@ body { font-family:'Inter', system-ui, -apple-system, sans-serif; -webkit-font-s
   resizeHandle.addEventListener('mousedown',e=>{ e.preventDefault(); drag.res=true; drag.sx=e.clientX; drag.sy=e.clientY; drag.w=widgetWindow.offsetWidth; drag.h=widgetWindow.offsetHeight; });
 
   // Init
-  loadState(); updatePrayerName(); renderPrayersSelect(); renderPrayerList(); updateBeads(); updateSubNameDisplay(); updateControls(); initFolder(); updateFolderInfo();
+  (async ()=>{
+    await loadState(); 
+    updatePrayerName(); 
+    renderPrayersSelect(); 
+    renderPrayerList(); 
+    updateBeads(); 
+    updateSubNameDisplay(); 
+    updateControls(); 
+    await initFolder(); 
+    updateFolderInfo();
+  })();
 })();
 </script>
 </body>
