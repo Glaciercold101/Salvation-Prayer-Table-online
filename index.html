@@ -40,6 +40,12 @@ body { font-family:'Inter', system-ui, -apple-system, sans-serif; -webkit-font-s
   0%,100% { box-shadow: 0 0 0 2px var(--accent), 0 0 0 4px color-mix(in srgb, var(--accent) 20%, transparent), 0 0 20px color-mix(in srgb, var(--accent) 55%, transparent); }
   50% { box-shadow: 0 0 0 2px var(--accent), 0 0 0 6px color-mix(in srgb, var(--accent) 35%, transparent), 0 0 32px color-mix(in srgb, var(--accent) 90%, transparent); }
 }
+
+.prayer-card.clickable { cursor:pointer; }
+.prayer-card.clickable:hover { background: rgba(255,255,255,0.08) !important; border-color: rgba(255,255,255,0.18) !important; }
+.prayer-card.playable::after { content:'\25B6'; position:absolute; top:8px; right:10px; font-size:10px; color:var(--accent); opacity:0; transition: opacity 0.2s; }
+.prayer-card.playable:hover::after { opacity:1; }
+
 .no-glow .prayer-card.active-prayer {
   animation: none !important;
   box-shadow: none !important;
@@ -47,7 +53,7 @@ body { font-family:'Inter', system-ui, -apple-system, sans-serif; -webkit-font-s
 }
 
 .bead { fill:#24242b; transition: fill 0.4s, filter 0.4s; }
-.bead.active { fill: var(--accent); filter: drop-shadow(0 0 8px color-mix(in srgb, var(--accent) 85%, transparent)) drop-shadow(0 0 14px color-mix(in srgb, var(--accent) 50%, transparent)); }
+.bead.active { fill: var(--accent); filter: drop-shadow(0 0 10px color-mix(in srgb, var(--accent) 90%, transparent)) drop-shadow(0 0 18px color-mix(in srgb, var(--accent) 60%, transparent)) drop-shadow(0 0 28px color-mix(in srgb, var(--accent) 35%, transparent)); transition: fill 0.4s, filter 0.4s; }
 
 .resize-handle {
   position:absolute; bottom:8px; right:8px; width:22px; height:22px;
@@ -104,12 +110,12 @@ body { font-family:'Inter', system-ui, -apple-system, sans-serif; -webkit-font-s
 
 #cinematicBg.show { opacity:1 !important; }
 #cinematicBg.kenburns {
-  animation: kenBurnsSlow 36s ease-in-out infinite alternate;
+  animation: kenBurnsSlow 12s ease-in-out infinite alternate;
   will-change: transform;
 }
 @keyframes kenBurnsSlow {
   0% { transform: scale(1) translate(0,0); }
-  100% { transform: scale(1.14) translate(-1.2%, -1.5%); }
+  100% { transform: scale(1.18) translate(-2.0%, -2.2%); }
 }
 @media (prefers-reduced-motion: reduce) {
   #cinematicBg.kenburns { animation: none; }
@@ -163,6 +169,7 @@ body { font-family:'Inter', system-ui, -apple-system, sans-serif; -webkit-font-s
   <!-- Cinematic Theme Backgrounds -->
   <div id="cinematicBg" class="fixed inset-0 opacity-0 pointer-events-none" style="z-index:0; background-size:cover; background-position:center; filter:brightness(0.88) saturate(1.08); transition: opacity 1.2s cubic-bezier(0.2,0.8,0.2,1);"></div>
   <div id="cinematicOverlay" class="fixed inset-0 opacity-0 pointer-events-none" style="z-index:1; transition: opacity 1s ease;"></div>
+  </div>
 
   <!-- MAIN APP WRAPPER - magazine margins -->
   <div class="mx-auto w-full max-w-[1720px] px-3 sm:px-6 lg:px-10 xl:px-14 2xl:px-20">
@@ -173,7 +180,9 @@ body { font-family:'Inter', system-ui, -apple-system, sans-serif; -webkit-font-s
       <div class="flex justify-between items-start w-full">
         <div>
           <div id="dateLabel" class="text-[18px] font-semibold tracking-[0.18em] uppercase text-zinc-200"></div>
-          <div class="text-[11px] uppercase tracking-[0.2em] text-zinc-500 mt-1.5">Jerusalem Time</div>
+          <div class="text-[11px] uppercase tracking-[0.2em] text-amber-200/90 mt-1.5">Jerusalem Time</div>
+          <div id="streakDisplay" class="mt-2 text-[11px] tracking-wide text-amber-300/80 hidden"></div>
+          <div id="todayProgress" class="mt-1 text-[10px] tracking-wide text-amber-500 hidden"></div>
         </div>
         <div class="flex items-center gap-3">
           <div id="timeLabel" class="text-[32px] font-light tabular leading-none text-zinc-100"></div>
@@ -228,11 +237,9 @@ body { font-family:'Inter', system-ui, -apple-system, sans-serif; -webkit-font-s
             <span id="folderInfo" class="text-[11px] text-[var(--accent)] font-medium"></span>
           </div>
           <div class="flex flex-wrap gap-2">
-            <button id="uploadFiles" class="px-3.5 py-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-white/10 text-[13px] transition">Upload Files</button>
             <button id="chooseFolder" class="px-3.5 py-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-white/10 text-[13px] transition">Choose Library Folder</button>
             <button id="rescanFolder" class="hidden px-3.5 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 border border-white/10 text-[13px] transition">Rescan Folder</button>
-            <input type="file" id="fileInput" multiple accept=".mp3,.wav,.m4a,.ogg,.aac,.flac,audio/*" class="hidden">
-          </div>
+            </div>
           <p class="text-[11px] text-zinc-500 mt-2.5 leading-snug">Files stay in your folder. Export now embeds selected audio as backup inside the JSON.</p>
         </div>
 
@@ -276,8 +283,8 @@ body { font-family:'Inter', system-ui, -apple-system, sans-serif; -webkit-font-s
         </div>
       </div>
       <div class="px-7 pb-1 text-center">
-        <div id="widgetPrayerName" class="font-playfair text-[22px] text-[#B48425] leading-tight font-medium">Morning Prayer</div>
-        <div id="widgetSubName" class="font-playfair text-[28px] text-white/95 leading-[0.95] mt-1 font-medium">Lord Jesus Christ, have mercy</div>
+        <div id="widgetPrayerName" class="font-playfair text-[20px] text-[#B48425] leading-tight font-medium">Morning Prayer</div>
+        <div id="widgetSubName" class="font-playfair text-[25px] text-white/95 leading-[0.95] mt-1 font-medium">Lord Jesus Christ, have mercy</div>
       </div>
 
       <!-- Beads Center -->
@@ -304,10 +311,23 @@ body { font-family:'Inter', system-ui, -apple-system, sans-serif; -webkit-font-s
           <div>
             <h2 class="font-playfair text-[26px] leading-tight text-zinc-100">Cinematic Themes</h2>
             <p class="text-[12px] text-zinc-400 mt-1.5 tracking-wide max-w-[420px]">Inspired by your image — <span class="text-zinc-200">“May God renew your strength today”</span> — golden hour light, peaceful landscapes</p>
+            <div class="flex gap-2 mt-3">
+              <button id="randomThemeBtn" class="px-3.5 py-1.5 rounded-full bg-white/[0.08] hover:bg-white/[0.14] border border-white/10 text-[11px] tracking-wide text-zinc-300 hover:text-white transition">🎲 Random Theme</button>
+            </div>
           </div>
           <button id="closeThemePicker" class="w-9 h-9 rounded-full bg-white/[0.08] hover:bg-white/[0.14] border border-white/10 grid place-items-center text-zinc-300 hover:text-white transition">✕</button>
         </div>
         <div id="themeGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5"></div>
+        <div class="flex items-center justify-between mt-4 p-3 rounded-xl bg-[#D4A574]/15 border border-[#D4A574]/25 hidden" id="meccaDayNightRow">
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-full bg-[#D4A574]/30 grid place-items-center">🕋</div>
+            <div>
+              <div class="text-[13px] font-medium text-white" id="meccaDayNightLabel">Day • Pilgrims in Sunlight</div>
+              <div class="text-[11px] text-zinc-400">Toggle Kaaba day / night view</div>
+            </div>
+          </div>
+          <button id="meccaDayNightBtn" class="px-3.5 py-1.5 rounded-full bg-white text-black text-[12px] font-semibold hover:bg-zinc-200 transition">🌙 Switch to Night</button>
+        </div>
         <div class="flex items-center justify-between mt-6 p-3 rounded-xl bg-white/[0.06] border border-white/10" id="kenBurnsToggleRow">
           <div class="flex items-center gap-3">
             <div class="w-8 h-8 rounded-full bg-[var(--accent)]/20 grid place-items-center">🎬</div>
@@ -330,6 +350,37 @@ body { font-family:'Inter', system-ui, -apple-system, sans-serif; -webkit-font-s
     </div>
   </div>
 
+  <!-- STATS CARD OVERLAY -->
+  <div id="statsOverlay" class="fixed inset-0 z-[120] hidden">
+    <div class="absolute inset-0 bg-black/80 backdrop-blur-[12px]" id="statsBackdrop"></div>
+    <div class="relative min-h-screen flex items-center justify-center p-4">
+      <div class="w-full max-w-[440px] rounded-[28px] bg-[#121214]/90 backdrop-blur-2xl border border-white/15 shadow-[0_24px_80px_rgba(0,0,0,0.6)] p-7 text-center">
+        <div class="text-[11px] tracking-[0.2em] uppercase text-zinc-500 mb-2">Prayer Completed • Rejoice!</div>
+        <h2 class="font-playfair text-[28px] text-white mb-1">Session Blessed</h2>
+        <div id="statsThemeName" class="text-[13px] text-[var(--accent)] mb-6"></div>
+        <div class="grid grid-cols-3 gap-3 mb-6">
+          <div class="rounded-2xl bg-white/[0.06] border border-white/10 p-3">
+            <div id="statsBeads" class="text-[22px] font-light text-white tabular">0</div>
+            <div class="text-[10px] uppercase tracking-widest text-zinc-500 mt-1">Beads</div>
+          </div>
+          <div class="rounded-2xl bg-white/[0.06] border border-white/10 p-3">
+            <div id="statsTime" class="text-[22px] font-light text-white tabular">0m</div>
+            <div class="text-[10px] uppercase tracking-widest text-zinc-500 mt-1">Time</div>
+          </div>
+          <div class="rounded-2xl bg-white/[0.06] border border-white/10 p-3">
+            <div id="statsStreak" class="text-[22px] font-light text-white tabular">0</div>
+            <div class="text-[10px] uppercase tracking-widest text-zinc-500 mt-1">Streak</div>
+          </div>
+        </div>
+        <div class="flex gap-2.5">
+          <button id="statsCloseBtn" class="flex-1 py-2.5 rounded-xl bg-white/[0.08] hover:bg-white/[0.14] border border-white/10 text-[13px] text-white transition">Continue</button>
+          <button id="statsExportBtn" class="flex-1 py-2.5 rounded-xl bg-[var(--accent)] hover:brightness-110 text-black font-semibold text-[13px] transition">📸 Export Card</button>
+        </div>
+        <div class="text-[10px] text-zinc-600 mt-4">SPACE to play again • Card is saved as PNG</div>
+      </div>
+    </div>
+  </div>
+
 <script>
 (() => {
   const $=s=>document.querySelector(s);
@@ -341,8 +392,8 @@ body { font-family:'Inter', system-ui, -apple-system, sans-serif; -webkit-font-s
   const widgetToggle=$('#widgetToggle'), exitWidget=$('#exitWidget');
   const widgetOverlay=$('#widgetOverlay'), widgetWindow=$('#widgetWindow'), widgetHeader=$('#widgetHeader');
   const forestBg=$('#forestBg'), app=$('#app');
-  const uploadFiles=$('#uploadFiles'), chooseFolder=$('#chooseFolder'), rescanFolder=$('#rescanFolder');
-  const fileInput=$('#fileInput'), folderInfo=$('#folderInfo');
+  const chooseFolder=$('#chooseFolder'), rescanFolder=$('#rescanFolder');
+  const folderInfo=$('#folderInfo');
   const prayerList=$('#prayerList'), addSub=$('#addSub');
   const newPrayer=$('#newPrayer'), savePrayer=$('#savePrayer'), loadPrayer=$('#loadPrayer');
   const exportPrayer=$('#exportPrayer'), importPrayer=$('#importPrayer'), importFile=$('#importFile');
@@ -373,21 +424,174 @@ body { font-family:'Inter', system-ui, -apple-system, sans-serif; -webkit-font-s
     { id:'galilee', name:'Galilee Calm', desc:'Peaceful waters at sunrise', accent:'#6EC1FF', bgColor:'#0e1e2a', bgImage:'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=2400', overlay:'linear-gradient(180deg, rgba(110,193,255,0.28) 0%, rgba(10,25,40,0.2) 50%, rgba(0,0,0,0.68) 100%)', preview:'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=600', saturated:false },
     { id:'olive', name:'Garden of Olives', desc:'Green hills & quiet prayer', accent:'#7ED957', bgColor:'#121d14', bgImage:'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?q=80&w=2400', overlay:'linear-gradient(180deg, rgba(126,217,87,0.18) 0%, rgba(10,20,12,0.2) 50%, rgba(0,0,0,0.70) 100%)', preview:'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?q=80&w=600', saturated:false },
     { id:'heavenly', name:'Heavenly Rays', desc:'Sunbeams breaking through', accent:'#FFD36A', bgColor:'#1e180a', bgImage:'https://images.unsplash.com/photo-1532274402911-5a369e4c4bb5?q=80&w=2400', overlay:'linear-gradient(180deg, rgba(255,211,106,0.32) 0%, rgba(30,20,5,0.15) 40%, rgba(0,0,0,0.70) 100%)', preview:'https://images.unsplash.com/photo-1532274402911-5a369e4c4bb5?q=80&w=600', saturated:false },
-    { id:'desert', name:'Desert Promise', desc:'Warm dusk, faithful light', accent:'#FF8A6B', bgColor:'#1e1210', bgImage:'https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?q=80&w=2400', overlay:'linear-gradient(180deg, rgba(255,138,107,0.24) 0%, rgba(30,15,10,0.2) 50%, rgba(0,0,0,0.72) 100%)', preview:'https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?q=80&w=600', saturated:false },
     { id:'starlit', name:'Starlit Vigil', desc:'Night watch under stars', accent:'#9D8DFF', bgColor:'#0e0c1a', bgImage:'https://images.unsplash.com/photo-1531306728370-e2ebd9d7bb99?q=80&w=2400', overlay:'linear-gradient(180deg, rgba(157,141,255,0.20) 0%, rgba(14,12,26,0.3) 50%, rgba(0,0,0,0.82) 100%)', preview:'https://images.unsplash.com/photo-1531306728370-e2ebd9d7bb99?q=80&w=600', saturated:false },
     { id:'crimson', name:'Crimson Covenant', desc:'MOVIE • Saturated red sunset', accent:'#FF4D5A', bgColor:'#1a0a0e', bgImage:'https://images.unsplash.com/photo-1495616811223-4d98c6e9c869?q=80&w=2400', overlay:'linear-gradient(180deg, rgba(255,77,90,0.32) 0%, rgba(40,10,15,0.25) 50%, rgba(0,0,0,0.74) 100%)', preview:'https://images.unsplash.com/photo-1495616811223-4d98c6e9c869?q=80&w=600', saturated:true },
     { id:'emerald', name:'Emerald Psalm', desc:'MOVIE • Hyper lush green', accent:'#00E676', bgColor:'#08120a', bgImage:'https://images.unsplash.com/photo-1511497584788-876760111969?q=80&w=2400', overlay:'linear-gradient(180deg, rgba(0,230,118,0.22) 0%, rgba(8,18,10,0.2) 50%, rgba(0,0,0,0.72) 100%)', preview:'https://images.unsplash.com/photo-1511497584788-876760111969?q=80&w=600', saturated:true },
     { id:'sapphire', name:'Sapphire Sanctuary', desc:'MOVIE • Deep blue twilight', accent:'#40C4FF', bgColor:'#080e1a', bgImage:'https://images.unsplash.com/photo-1519681393784-d120267933ba?q=80&w=2400', overlay:'linear-gradient(180deg, rgba(64,196,255,0.28) 0%, rgba(8,14,26,0.25) 50%, rgba(0,0,0,0.78) 100%)', preview:'https://images.unsplash.com/photo-1519681393784-d120267933ba?q=80&w=600', saturated:true },
-    { id:'goldenGlory', name:'Golden Glory', desc:'MOVIE • Ultra gold - 200% saturation', accent:'#FFD700', bgColor:'#1a1500', bgImage:'https://images.unsplash.com/photo-1506744038136-46273834b3fb?q=80&w=2400', overlay:'linear-gradient(180deg, rgba(255,215,0,0.34) 0%, rgba(26,21,0,0.22) 45%, rgba(0,0,0,0.70) 100%)', preview:'https://images.unsplash.com/photo-1506744038136-46273834b3fb?q=80&w=600', saturated:true },
+    { id:'crystalClear', name:'Crystal Lagoon', desc:'MOVIE • Ultra clear turquoise paradise', accent:'#00E5FF', bgColor:'#05141e', bgImage:'https://images.unsplash.com/photo-1439066615861-d1af74d74000?q=80&w=2400', overlay:'linear-gradient(180deg, rgba(0,229,255,0.30) 0%, rgba(5,20,30,0.22) 45%, rgba(0,0,0,0.70) 100%)', preview:'https://images.unsplash.com/photo-1439066615861-d1af74d74000?q=80&w=600', saturated:true },
+    { id:'tropicalBloom', name:'Tropical Bloom', desc:'MOVIE • Hyper colorful valley', accent:'#FF6B9D', bgColor:'#1a0e18', bgImage:'https://images.unsplash.com/photo-1501785888041-af3ef285b470?q=80&w=2400', overlay:'linear-gradient(180deg, rgba(255,107,157,0.30) 0%, rgba(26,14,24,0.20) 50%, rgba(0,0,0,0.70) 100%)', preview:'https://images.unsplash.com/photo-1501785888041-af3ef285b470?q=80&w=600', saturated:true },
+    { id:'winterBenediction', name:'Winter Benediction', desc:'SNOW • Silent night, holy night', accent:'#E0F7FF', bgColor:'#0e1520', bgImage:'https://images.unsplash.com/photo-1491002052546-bf38f186af56?q=80&w=2400', overlay:'linear-gradient(180deg, rgba(224,247,255,0.22) 0%, rgba(14,21,32,0.25) 50%, rgba(0,0,0,0.76) 100%)', preview:'https://images.unsplash.com/photo-1491002052546-bf38f186af56?q=80&w=600', saturated:false },
+    { id:'meccaPromise', name:'Desert Promise • Mecca Pilgrims', desc:'Pilgrims circling the Holy Kaaba', accent:'#D4A574', bgColor:'#1a120a', bgImage:'https://images.pexels.com/photos/11934382/pexels-photo-11934382.jpeg?auto=compress&cs=tinysrgb&w=2400', overlay:'linear-gradient(180deg, rgba(212,165,116,0.28) 0%, rgba(26,18,10,0.22) 50%, rgba(0,0,0,0.72) 100%)', preview:'https://images.pexels.com/photos/11934382/pexels-photo-11934382.jpeg?auto=compress&cs=tinysrgb&w=600', saturated:true }
   ];
   const themes = cinematicThemes.map(t=>t.accent);
   let themeIdx=0;
   let currentCinematicId='jesusRenewal';
   let kenBurnsEnabled = true;
+  let meccaNight = false;
+  const MECCA_DAY = 'https://images.pexels.com/photos/11934382/pexels-photo-11934382.jpeg?auto=compress&cs=tinysrgb&w=2400';
+  const MECCA_NIGHT = 'https://images.pexels.com/photos/35315922/pexels-photo-35315922/free-photo-of-pilgrims-gather-around-kaaba-in-mecca.jpeg?auto=compress&cs=tinysrgb&w=2400';
+  const MECCA_DAY_PREVIEW = 'https://images.pexels.com/photos/11934382/pexels-photo-11934382.jpeg?auto=compress&cs=tinysrgb&w=600';
+  const MECCA_NIGHT_PREVIEW = 'https://images.pexels.com/photos/35315922/pexels-photo-35315922/free-photo-of-pilgrims-gather-around-kaaba-in-mecca.jpeg?auto=compress&cs=tinysrgb&w=600';
 
+  // --- New Feature State ---
+  let sessionStartTime = null;
+  let totalSessionBeads = 0;
+  let streakCount = 0;
+  let todayBeadGoal = 33;
+  // --- Streak Helpers ---
 
+  function getTodayStr(){
+    return new Date().toISOString().split('T')[0];
+  }
+  function getYesterdayStr(){
+    const d = new Date(); d.setDate(d.getDate()-1); return d.toISOString().split('T')[0];
+  }
+  function loadStreak(){
+    try{
+      streakCount = parseInt(localStorage.getItem('sb2-streak')||'0');
+      const last = localStorage.getItem('sb2-last-prayed');
+      const todayCount = parseInt(localStorage.getItem('sb2-today-count')||'0');
+      const todayStr = getTodayStr();
+      const lastToday = localStorage.getItem('sb2-today-date');
+      if(lastToday !== todayStr){
+        localStorage.setItem('sb2-today-date', todayStr);
+        localStorage.setItem('sb2-today-count', '0');
+      }
+      updateStreakUI();
+    }catch{}
+  }
+  function updateStreakUI(){
+    const el = document.getElementById('streakDisplay');
+    const prog = document.getElementById('todayProgress');
+    if(!el) return;
+    try{
+      const todayCount = parseInt(localStorage.getItem('sb2-today-count')||'0');
+      const streak = parseInt(localStorage.getItem('sb2-streak')||'0');
+      if(streak>0){
+        el.textContent = `🔥 ${streak} day streak`;
+        el.classList.remove('hidden');
+      } else {
+        el.classList.add('hidden');
+      }
+      if(todayCount>0){
+        prog.textContent = `Today: ${todayCount}/${todayBeadGoal} beads`;
+        prog.classList.remove('hidden');
+      } else {
+        prog.textContent = `Today: 0/${todayBeadGoal} — Press Play to rejoice`;
+        prog.classList.remove('hidden');
+      }
+    }catch{}
+  }
+  function bumpStreak(beadsAdded){
+    try{
+      const todayStr = getTodayStr();
+      const last = localStorage.getItem('sb2-last-prayed');
+      let streak = parseInt(localStorage.getItem('sb2-streak')||'0');
+      let todayCount = parseInt(localStorage.getItem('sb2-today-count')||'0');
+      const lastToday = localStorage.getItem('sb2-today-date');
+
+      if(lastToday !== todayStr){
+        todayCount = 0;
+        localStorage.setItem('sb2-today-date', todayStr);
+      }
+      todayCount += beadsAdded;
+      localStorage.setItem('sb2-today-count', String(todayCount));
+
+      if(last !== todayStr){
+        if(last === getYesterdayStr()){
+          streak += 1;
+        } else if(!last){
+          streak = 1;
+        } else {
+          const diff = (new Date(todayStr) - new Date(last)) / (1000*60*60*24);
+          if(diff>1) streak = 1;
+          else streak += 1;
+        }
+        localStorage.setItem('sb2-last-prayed', todayStr);
+        localStorage.setItem('sb2-streak', String(streak));
+      }
+      updateStreakUI();
+      return streak;
+    }catch{ return 0; }
+  }
+
+  function showStatsCard(durationMs, beads, streak){
+    const overlay = document.getElementById('statsOverlay');
+    if(!overlay) return;
+    const mins = Math.max(1, Math.round(durationMs/60000));
+    document.getElementById('statsBeads').textContent = String(beads);
+    document.getElementById('statsTime').textContent = mins + 'm';
+    document.getElementById('statsStreak').textContent = String(streak);
+    document.getElementById('statsThemeName').textContent = cinematicThemes.find(t=>t.id===currentCinematicId)?.name || '';
+    overlay.classList.remove('hidden');
+  }
+  function hideStatsCard(){
+    const overlay = document.getElementById('statsOverlay');
+    if(overlay) overlay.classList.add('hidden');
+  }
+  function exportStatsAsImage(){
+    const canvas = document.createElement('canvas');
+    canvas.width = 1080; canvas.height = 1350;
+    const ctx = canvas.getContext('2d');
+    const t = cinematicThemes.find(x=>x.id===currentCinematicId);
+    // background
+    ctx.fillStyle = t ? t.bgColor : '#070708';
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+    // gradient overlay
+    const grad = ctx.createLinearGradient(0,0,0,canvas.height);
+    grad.addColorStop(0, 'rgba(0,0,0,0.2)'); grad.addColorStop(1, 'rgba(0,0,0,0.75)');
+    ctx.fillStyle = grad; ctx.fillRect(0,0,canvas.width,canvas.height);
+    // accent circle
+    ctx.fillStyle = t ? t.accent : '#B48425';
+    ctx.globalAlpha = 0.15;
+    ctx.beginPath(); ctx.arc(540, 380, 220, 0, Math.PI*2); ctx.fill(); ctx.globalAlpha = 1;
+    // text
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '600 64px Playfair Display, serif'; ctx.textAlign='center';
+    ctx.fillText('Salvation Beads', 540, 300);
+    ctx.font = '300 36px Inter, sans-serif'; ctx.fillStyle = 'rgba(255,255,255,0.7)';
+    ctx.fillText('Session Blessed • Rejoice!', 540, 360);
+    ctx.fillStyle = t ? t.accent : '#B48425';
+    ctx.font = '500 28px Inter, sans-serif';
+    ctx.fillText(t ? t.name : '', 540, 410);
+    // stats boxes
+    const beads = document.getElementById('statsBeads')?.textContent || '0';
+    const time = document.getElementById('statsTime')?.textContent || '0m';
+    const streak = document.getElementById('statsStreak')?.textContent || '0';
+    ctx.fillStyle = 'rgba(255,255,255,0.08)'; ctx.strokeStyle='rgba(255,255,255,0.12)';
+    [340,540,740].forEach((x,i)=>{
+      ctx.beginPath(); ctx.roundRect(x-150, 520, 300, 220, 28); ctx.fill(); ctx.stroke();
+    });
+    ctx.fillStyle='#fff'; ctx.font='300 72px Inter, sans-serif';
+    ctx.fillText(beads, 340, 630); ctx.fillText(time, 540, 630); ctx.fillText(streak, 740, 630);
+    ctx.font='600 20px Inter, sans-serif'; ctx.fillStyle='rgba(255,255,255,0.45)';
+    ctx.fillText('BEADS', 340, 680); ctx.fillText('TIME', 540, 680); ctx.fillText('STREAK', 740, 680);
+    // date
+    ctx.font='400 20px Inter, sans-serif'; ctx.fillStyle='rgba(255,255,255,0.35)';
+    ctx.fillText(new Date().toLocaleDateString('en-US', { weekday:'long', year:'numeric', month:'long', day:'numeric'}), 540, 1260);
+    const link = document.createElement('a');
+    link.download = `Salvation-Beads-${getTodayStr()}.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+    function wrapText(context, text, x, y, maxWidth, lineHeight) {
+      const words = text.split(' '); let line = ''; let yy=y;
+      for(let n=0;n<words.length;n++){ const testLine=line+words[n]+' '; const metrics=context.measureText(testLine); const testWidth=metrics.width; if(testWidth>maxWidth && n>0){ context.fillText(line, x, yy); line=words[n]+' '; yy+=lineHeight; } else { line=testLine; } }
+      context.fillText(line, x, yy);
+    }
+  }
 
   // --- Beads ---
+
   function createBeads(container, size, count=BEAD_COUNT){
     container.innerHTML='';
     const NS='http://www.w3.org/2000/svg';
@@ -480,8 +684,16 @@ body { font-family:'Inter', system-ui, -apple-system, sans-serif; -webkit-font-s
         prayerList.appendChild(insert);
       }
       const card=document.createElement('div');
-      card.className='prayer-card bg-zinc-900/70 rounded-xl p-3 flex items-center gap-2.5 flex-wrap sm:flex-nowrap';
+      card.className='prayer-card clickable playable bg-zinc-900/70 rounded-xl p-3 flex items-center gap-2.5 flex-wrap sm:flex-nowrap relative';
       card.dataset.id=sub.id;
+      card.title='Click to play from here';
+      card.addEventListener('click', (e)=>{
+        if(e.target.closest('input, select, button, .drag-handle')) return;
+        currentSubIndex = idx;
+        currentRepeat = 0;
+        play();
+        saveState();
+      });
       card.innerHTML=`
         <div class="drag-handle cursor-grab active:cursor-grabbing text-zinc-600 hover:text-zinc-300 px-1 select-none shrink-0">⋮⋮</div>
         <input class="sub-name flex-1 min-w-[120px] bg-transparent outline-none text-[14px] py-1" value="${sub.name}" placeholder="Sub-prayer text">
@@ -578,8 +790,6 @@ body { font-family:'Inter', system-ui, -apple-system, sans-serif; -webkit-font-s
   }
   chooseFolder.onclick=async()=>{ try{ const h=await window.showDirectoryPicker({mode:'read'}); await idbKeyval.set('sb2-dir',h); await loadFromDirectory(h); rescanFolder.classList.remove('hidden'); }catch{} };
   rescanFolder.onclick=()=>{ if(dirHandle) loadFromDirectory(dirHandle); };
-  uploadFiles.onclick=()=>fileInput.click();
-  fileInput.onchange=e=>{ [...e.target.files].forEach(f=>{ library.push({id:crypto.randomUUID(), name:f.name.replace(/\.[^/.]+$/,''), url:URL.createObjectURL(f)}); }); updateFolderInfo(); renderPrayerList(); saveState(); fileInput.value=''; };
 
   // --- Prayer Name Dynamic ---
   function updatePrayerName(){
@@ -636,6 +846,7 @@ body { font-family:'Inter', system-ui, -apple-system, sans-serif; -webkit-font-s
   function onEnded(){
     if(!isPlaying) return;
     const sub=currentPrayer.subs[currentSubIndex];
+    if(sub && sub.countOnBeads!==false){ totalSessionBeads++; updateStreakUI(); }
     if(currentRepeat < sub.repeats){ 
       playCurrent(); 
     }
@@ -660,16 +871,25 @@ body { font-family:'Inter', system-ui, -apple-system, sans-serif; -webkit-font-s
   }
   let lastEnded=0; audio.onended=()=>{ const now=performance.now(); if(now-lastEnded<200) return; lastEnded=now; onEnded(); };
   function togglePlay(){ isPlaying?pause():play(); }
-  function play(){ if(!currentPrayer.subs.length) return; isPlaying=true; playCurrent(); updateControls(); }
+  function play(){ if(!currentPrayer.subs.length) return; isPlaying=true; if(!sessionStartTime) sessionStartTime = Date.now(); playCurrent(); updateControls(); }
   function pause(){ isPlaying=false; audio.pause(); updateControls(); updateActiveGlow(); }
-  function stop(){ isPlaying=false; audio.pause(); updateControls(); updateActiveGlow(); }
+  function stop(){ 
+    isPlaying=false; audio.pause(); updateControls(); updateActiveGlow(); 
+    if(totalSessionBeads>0 && sessionStartTime){
+      const dur = Date.now() - sessionStartTime;
+      const streak = bumpStreak(totalSessionBeads);
+      showStatsCard(dur, totalSessionBeads, streak);
+      sessionStartTime = null;
+      totalSessionBeads = 0;
+    }
+  }
   function next(){ audio.pause(); currentRepeat=0; currentSubIndex=(currentSubIndex+1)%Math.max(1,currentPrayer.subs.length); updateBeads(); isPlaying?playCurrent():updateActiveGlow(); saveState(); }
   function reset(){ stop(); currentSubIndex=0; currentRepeat=0; updateBeads(); updateSubNameDisplay(); saveState(); }
   playBtn.onclick=togglePlay; nextBtn.onclick=next; resetBtn.onclick=reset;
   document.querySelectorAll('[data-w]').forEach(b=>b.onclick=()=>{ const a=b.dataset.w; if(a==='play')togglePlay(); if(a==='next')next(); if(a==='reset')reset(); });
 
   // Keyboard
-  window.addEventListener('keydown',e=>{ if(['INPUT','SELECT'].includes(e.target.tagName)) return; if(e.code==='Space'){e.preventDefault();togglePlay();} if(e.key.toLowerCase()==='n')next(); if(e.key.toLowerCase()==='r')reset(); });
+  window.addEventListener('keydown',e=>{ if(['INPUT','SELECT'].includes(e.target.tagName)) return; if(e.code==='Space'){e.preventDefault();togglePlay();} if(e.key.toLowerCase()==='n')next(); if(e.key.toLowerCase()==='r')reset(); if(e.key.toLowerCase()==='m' && currentCinematicId==='meccaPromise'){ e.preventDefault(); toggleMeccaDayNight(); } });
 
   // Save/Load
   newPrayer.onclick=()=>{ const id='p'+Date.now(); currentPrayer={id, name:'New Prayer', subs:[{id:crypto.randomUUID(), name:'New invocation', audioId:'', repeats:3, countOnBeads:true, pauseAfter:1}]}; prayers.push(JSON.parse(JSON.stringify(currentPrayer))); renderPrayersSelect(); loadPrayer.value=id; updatePrayerName(); renderPrayerList(); reset(); saveState(); };
@@ -803,7 +1023,11 @@ body { font-family:'Inter', system-ui, -apple-system, sans-serif; -webkit-font-s
     if(themeIdx<0) themeIdx=1;
     document.documentElement.style.setProperty('--accent', t.accent);
     if(t.bgImage){
-      cinematicBg.style.backgroundImage = `${t.overlay}, url('${t.bgImage}')`;
+      let bgToUse = t.bgImage;
+      if(t.id==='meccaPromise'){
+        bgToUse = meccaNight ? MECCA_NIGHT : MECCA_DAY;
+      }
+      cinematicBg.style.backgroundImage = `${t.overlay}, url('${bgToUse}')`;
       if(t.saturated) cinematicBg.style.filter = 'brightness(0.92) saturate(1.45) contrast(1.08)';
       else if(t.id==='jesusRenewal') cinematicBg.style.filter = 'brightness(0.92) saturate(1.15) contrast(1.05)';
       else cinematicBg.style.filter = 'brightness(0.88) saturate(1.08)';
@@ -825,7 +1049,28 @@ body { font-family:'Inter', system-ui, -apple-system, sans-serif; -webkit-font-s
     document.querySelectorAll('.theme-card').forEach(el=>{
       el.classList.toggle('active', el.dataset.id===id);
     });
+    // Show/hide Mecca day/night toggle
+    const meccaRow = document.getElementById('meccaDayNightRow');
+    if(meccaRow){
+      if(id==='meccaPromise'){
+        meccaRow.classList.remove('hidden');
+        const label = document.getElementById('meccaDayNightLabel');
+        const btn = document.getElementById('meccaDayNightBtn');
+        if(label) label.textContent = meccaNight ? 'Night • Lights of Haram' : 'Day • Pilgrims in Sunlight';
+        if(btn) btn.textContent = meccaNight ? '☀️ Switch to Day' : '🌙 Switch to Night';
+      } else {
+        meccaRow.classList.add('hidden');
+      }
+    }
     if(save){ try{ localStorage.setItem('sb2-cinematic-theme', id); }catch{} }
+  }
+
+  function toggleMeccaDayNight(){
+    meccaNight = !meccaNight;
+    try{ localStorage.setItem('sb2-mecca-night', meccaNight ? '1':'0'); }catch{}
+    if(currentCinematicId==='meccaPromise'){
+      applyCinematicTheme('meccaPromise', true);
+    }
   }
 
   function renderThemePicker(){
@@ -846,6 +1091,14 @@ body { font-family:'Inter', system-ui, -apple-system, sans-serif; -webkit-font-s
           </div>
         </div>`;
     }).join('');
+    // Random theme button
+  function pickRandomTheme(){
+    let pool = cinematicThemes.filter(t=>t.id!==currentCinematicId);
+    if(pool.length===0) pool = cinematicThemes;
+    const rand = pool[Math.floor(Math.random()*pool.length)];
+    applyCinematicTheme(rand.id, true);
+  }
+
     // Ken Burns toggle row
     const toggleRow = document.getElementById('kenBurnsToggleRow');
     if(toggleRow){
@@ -881,6 +1134,25 @@ body { font-family:'Inter', system-ui, -apple-system, sans-serif; -webkit-font-s
   resetThemeBtn.onclick=()=>applyCinematicTheme('jesusRenewal');
   window.addEventListener('keydown', (e)=>{ if(e.key==='Escape' && !themePickerOverlay.classList.contains('hidden')) closeThemePicker(); });
 
+  // Mecca Day/Night toggle + Random + Verse + Stats
+  document.addEventListener('click', (e)=>{
+    if(e.target && e.target.id==='meccaDayNightBtn'){
+      toggleMeccaDayNight();
+    }
+    if(e.target && e.target.id==='randomThemeBtn'){
+      pickRandomTheme();
+    }
+    if(e.target && e.target.id==='statsCloseBtn'){
+      hideStatsCard();
+    }
+    if(e.target && e.target.id==='statsExportBtn'){
+      exportStatsAsImage();
+    }
+    if(e.target && e.target.id==='statsBackdrop'){
+      hideStatsCard();
+    }
+  });
+
   // Ken Burns toggle wiring (delegated after render, also global)
   document.addEventListener('change', (e)=>{
     if(e.target && e.target.id==='kenBurnsChk'){
@@ -896,6 +1168,8 @@ body { font-family:'Inter', system-ui, -apple-system, sans-serif; -webkit-font-s
   try{
     const savedCinematic = localStorage.getItem('sb2-cinematic-theme');
     const savedKen = localStorage.getItem('sb2-kenburns');
+    const savedMeccaNight = localStorage.getItem('sb2-mecca-night');
+    if(savedMeccaNight!==null) meccaNight = savedMeccaNight==='1';
     if(savedKen!==null) kenBurnsEnabled = savedKen==='1';
     if(savedCinematic){
       const found = cinematicThemes.find(t=>t.id===savedCinematic);
@@ -905,7 +1179,8 @@ body { font-family:'Inter', system-ui, -apple-system, sans-serif; -webkit-font-s
       applyCinematicTheme('jesusRenewal', false);
     }
     if(localStorage.getItem('sb2-noglow')==='1') document.body.classList.add('no-glow');
-  }catch{ applyCinematicTheme('jesusRenewal', false); }
+    loadStreak();
+  }catch{ applyCinematicTheme('jesusRenewal', false); loadStreak(); }
 
 
   // Lock
