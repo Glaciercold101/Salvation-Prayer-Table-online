@@ -1,0 +1,9 @@
+{
+  "name": "Salvation Beads v2 — Widget Edition",
+  "short_name": "SalvationBeads",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#070708",
+  "theme_color": "#B48425",
+  "icons": []
+}

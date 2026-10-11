@@ -1,0 +1,7 @@
+
+@font-face { font-family: 'Inter'; font-weight: 300; src: local('Inter Light'), local('Segoe UI Light'); font-display: swap; }
+@font-face { font-family: 'Inter'; font-weight: 400; src: local('Inter'), local('Segoe UI'); font-display: swap; }
+@font-face { font-family: 'Inter'; font-weight: 500; src: local('Inter Medium'), local('Segoe UI Semibold'); font-display: swap; }
+@font-face { font-family: 'Inter'; font-weight: 600; src: local('Inter SemiBold'), local('Segoe UI Bold'); font-display: swap; }
+@font-face { font-family: 'Playfair Display'; font-weight: 500; src: local('Playfair Display'), local('Georgia'); font-display: swap; }
+@font-face { font-family: 'Playfair Display'; font-weight: 700; src: local('Playfair Display Bold'), local('Georgia Bold'); font-display: swap; }
