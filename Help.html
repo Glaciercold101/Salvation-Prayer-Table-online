@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Salvation Beads - Help</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=Inter:wght@400;500;600;700&display=swap');
+  /* Fallback if offline - system fonts */
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;min-height:100%}
+  body{
+    background:#0A162C;
+    font-family:'Inter', system-ui, -apple-system, Segoe UI, sans-serif;
+    display:flex;justify-content:center;padding:18px;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{
+    width:100%;max-width:440px;
+    border-radius:26px;
+    overflow:hidden;
+    position:relative;
+    background: linear-gradient(180deg, #13264A 0%, #0E1E3A 45%, #0A162C 100%);
+    border:1px solid rgba(234,192,112,0.18);
+    box-shadow: 0 24px 80px rgba(0,0,0,0.75), inset 0 1px 0 rgba(255,255,255,0.07), inset 0 0 0 1px rgba(0,0,0,0.6);
+  }
+  .wrap::before{
+    content:"";
+    position:absolute;inset:0;
+    background: radial-gradient(ellipse at top center, rgba(234,192,112,0.14) 0%, transparent 55%),
+                radial-gradient(ellipse at 20% 80%, rgba(45,85,150,0.18) 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 90%, rgba(234,192,112,0.06) 0%, transparent 50%);
+    pointer-events:none;
+  }
+  .noise{
+    position:absolute;inset:0;opacity:0.04;pointer-events:none;
+    background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  .inner{position:relative;padding:28px 22px 18px 22px}
+  .top-dots{display:flex;justify-content:center;gap:8px;margin-bottom:18px}
+  .top-dots span{width:6px;height:6px;border-radius:50%;background:#EAC070;box-shadow:0 0 8px rgba(234,192,112,0.6)}
+  .top-dots span:nth-child(2){opacity:0.7}
+  .top-dots span:nth-child(3){opacity:0.45}
+  h1{
+    font-family:'Playfair Display', Georgia, serif;
+    font-size:34px;line-height:0.95;letter-spacing:-0.02em;
+    text-align:center;margin:0;
+    background: linear-gradient(180deg, #FFF8DC 0%, #FFEB9E 12%, #EAC070 32%, #B48425 68%, #8B6914 100%);
+    -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+    filter: drop-shadow(0 1px 0 rgba(0,0,0,0.6)) drop-shadow(0 0 18px rgba(234,192,112,0.15));
+    font-weight:800;
+  }
+  .subtitle{
+    text-align:center;margin-top:10px;
+    font-size:10px;font-weight:600;letter-spacing:0.28em;color:#6B728C;
+  }
+  .divider{margin:18px auto 0 auto;width:100%;height:1px;background:linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent)}
+  .sections{margin-top:18px;display:flex;flex-direction:column}
+  .sec{
+    position:relative;display:flex;gap:14px;padding:14px 0;
+    border-bottom:1px solid rgba(255,255,255,0.04);
+  }
+  .sec:last-child{border-bottom:none}
+  .sec::before{
+    content:"";position:absolute;left:17px;top:46px;bottom:-6px;width:1px;
+    background:linear-gradient(180deg, rgba(234,192,112,0.12), transparent);
+  }
+  .sec:last-child::before{display:none}
+  .icon{
+    width:36px;height:36px;border-radius:10px;flex-shrink:0;
+    display:grid;place-items:center;
+    background: linear-gradient(180deg, #12264A 0%, #0F2347 100%);
+    border:1px solid rgba(234,192,112,0.20);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), 0 6px 18px rgba(0,0,0,0.35);
+    color:#EAC070;font-size:14px;font-weight:700;
+  }
+  .sec-title{
+    font-size:10.5px;font-weight:700;letter-spacing:0.14em;color:#EAC070;
+    text-shadow:0 0 12px rgba(234,192,112,0.22);
+    line-height:1;
+    margin-bottom:6px;
+  }
+  .sec-text{
+    font-size:13px;line-height:1.55;color:rgba(232,227,215,0.86);letter-spacing:-0.01em;
+  }
+  .sec-text b{color:#F0E6C8;font-weight:600}
+  .tag{
+    display:inline-flex;align-items:center;
+    padding:2px 7px;border-radius:5px;
+    font-size:10px;font-weight:700;letter-spacing:0.04em;
+    border:1px solid rgba(234,192,112,0.22);
+    background:#0F2347;color:#EAC070;
+    margin-right:3px;
+  }
+  .plus{
+    display:inline-grid;place-items:center;
+    width:16px;height:16px;border-radius:50%;
+    background:rgba(234,192,112,0.15);border:1px solid rgba(234,192,112,0.25);
+    color:#EAC070;font-size:11px;line-height:1;
+    vertical-align:middle;
+  }
+  .drag{color:#EAC070;letter-spacing:0.2em}
+  .important{
+    margin-top:22px;
+    border-radius:16px;
+    position:relative;overflow:hidden;
+    background: linear-gradient(180deg, #0D1F3E 0%, #0A1930 100%);
+    border:1px solid rgba(234,192,112,0.22);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.05), 0 10px 30px rgba(0,0,0,0.4);
+    padding:14px 14px 14px 42px;
+  }
+  .important::before{
+    content:"";position:absolute;top:0;left:0;right:0;height:1px;
+    background:linear-gradient(90deg, transparent, rgba(234,192,112,0.3), transparent);
+  }
+  .imp-icon{
+    position:absolute;left:14px;top:14px;width:20px;height:20px;border-radius:6px;
+    display:grid;place-items:center;background:#0F2347;border:1px solid rgba(234,192,112,0.25);
+    color:#EAC070;font-size:10px;font-weight:900;
+  }
+  .imp-title{font-size:10px;font-weight:700;letter-spacing:0.18em;color:#EAC070;margin-bottom:4px;display:flex;align-items:center;gap:8px}
+  .imp-title::after{content:"";flex:1;height:1px;background:rgba(234,192,112,0.15)}
+  .imp-text{font-size:12px;line-height:1.5;color:rgba(216,210,196,0.85)}
+  .footer{
+    margin-top:22px;display:flex;align-items:center;justify-content:center;gap:12px;
+  }
+  .footer .line{height:1px;width:32px;background:rgba(234,192,112,0.12)}
+  .footer .txt{font-size:9.5px;letter-spacing:0.22em;color:#6B6E84;display:flex;gap:8px;align-items:center}
+  .footer .dot{width:2px;height:2px;border-radius:50%;background:rgba(234,192,112,0.3)}
+  .badge{
+    margin-top:14px;display:flex;justify-content:center;
+  }
+  .badge span{
+    display:inline-flex;align-items:center;gap:6px;
+    padding:6px 12px;border-radius:999px;
+    font-size:10px;letter-spacing:0.04em;color:#8A7A5A;
+    border:1px solid rgba(234,192,112,0.12);background:rgba(15,35,71,0.5);
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="noise"></div>
+  <div class="inner">
+    <div class="top-dots"><span></span><span></span><span></span></div>
+    <h1>Salvation Beads</h1>
+    <div class="subtitle">QUICK GUIDE — PRAYER TABLE</div>
+    <div class="divider"></div>
+
+    <div class="sections">
+      <div class="sec">
+        <div class="icon">♥</div>
+        <div style="flex:1;min-width:0">
+          <div class="sec-title">WHAT THE APP DOES</div>
+          <div class="sec-text">You can add your own audio clips and prepare repeated beads prayers. And play prepared Salvation Beads prayers.</div>
+        </div>
+      </div>
+
+      <div class="sec">
+        <div class="icon">◧</div>
+        <div style="flex:1;min-width:0">
+          <div class="sec-title">START</div>
+          <div class="sec-text">Open single-file exe, expand window — offline</div>
+        </div>
+      </div>
+
+      <div class="sec">
+        <div class="icon">♥</div>
+        <div style="flex:1;min-width:0">
+          <div class="sec-title">THEMES</div>
+          <div class="sec-text"><b>Heart middle-top</b> → pick theme, <b>Load Your Theme</b> (your image), glow adopts accent, <span style="color:#EAC070">★ YOURS</span> + <span style="color:#EAC070">✕ delete</span></div>
+        </div>
+      </div>
+
+      <div class="sec">
+        <div class="icon">▶</div>
+        <div style="flex:1;min-width:0">
+          <div class="sec-title">PLAY</div>
+          <div class="sec-text">Import JSON → Play, with <span class="tag">SPACE</span><span class="tag">N</span><span class="tag">R</span><span class="tag">M</span> — <b>M = Midnight Mecca</b></div>
+        </div>
+      </div>
+
+      <div class="sec">
+        <div class="icon">◫</div>
+        <div style="flex:1;min-width:0">
+          <div class="sec-title">CHOOSE LIBRARY FOLDER</div>
+          <div class="sec-text">Select audio folder</div>
+        </div>
+      </div>
+
+      <div class="sec">
+        <div class="icon">+</div>
+        <div style="flex:1;min-width:0">
+          <div class="sec-title">INSERT + EDIT</div>
+          <div class="sec-text">Hover between rows <span class="plus">+</span> to insert, edit sub-prayer name per row</div>
+        </div>
+      </div>
+
+      <div class="sec">
+        <div class="icon">↕</div>
+        <div style="flex:1;min-width:0">
+          <div class="sec-title">DRAG & REORDER</div>
+          <div class="sec-text">Drag and reorder sub-prayers — grab <span class="drag">⋮⋮</span> handle to move</div>
+        </div>
+      </div>
+
+      <div class="sec">
+        <div class="icon">⚙</div>
+        <div style="flex:1;min-width:0">
+          <div class="sec-title">REPEATS • PAUSE • COUNT</div>
+          <div class="sec-text">Repeats ≥100, pause 0-5s, uncheck count if plays once</div>
+        </div>
+      </div>
+
+      <div class="sec">
+        <div class="icon">◰</div>
+        <div style="flex:1;min-width:0">
+          <div class="sec-title">SAVE & EXPORT</div>
+          <div class="sec-text">Save Prayer → Export Current = with config + audio files, keep safe, reopen anytime</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="important">
+      <div class="imp-icon">!</div>
+      <div class="imp-title">IMPORTANT</div>
+      <div class="imp-text">Backup json and custom themes works locally. Nothing is uploaded or downloaded.</div>
+    </div>
+
+    <div class="footer">
+      <div class="line"></div>
+      <div class="txt"><span>OFFLINE</span><span class="dot"></span><span>SINGLE-FILE</span><span class="dot"></span><span>CINEMATIC</span></div>
+      <div class="line"></div>
+    </div>
+
+    <div class="badge"><span>✦ Opens as strip over app window</span></div>
+  </div>
+</div>
+
+<script>
+// Force strip window size - Chrome app mode ignores window.open width
+(function(){
+  function makeStrip(){
+    try{
+      const targetW=400, targetH=900;
+      if(window.outerWidth !== targetW || window.outerHeight !== targetH){
+        window.resizeTo(targetW, targetH);
+      }
+      // Center
+      try{
+        const left = Math.round((screen.width - targetW)/2);
+        const top = Math.round((screen.height - targetH)/2);
+        window.moveTo(left, top);
+      }catch(e){}
+    }catch(e){}
+  }
+  window.addEventListener('load', ()=>{ setTimeout(makeStrip, 80); setTimeout(makeStrip, 400); });
+  // Also try immediately
+  makeStrip();
+})();
+</script>
+
+</body>
+</html>
