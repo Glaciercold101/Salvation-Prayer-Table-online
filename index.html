@@ -1044,7 +1044,7 @@ body { font-family:'Inter', system-ui, -apple-system, sans-serif; -webkit-font-s
           </label>
         </div>
         <div class="mt-5 pt-5 border-t border-white/10 flex flex-wrap gap-3 justify-between items-center">
-          <div class="text-[11px] text-zinc-300 leading-snug">Shift+Click the ◐ button to toggle glow • Themes save automatically • Like your Isaiah 40:31 image</div>
+          <div class="text-[11px] text-zinc-300 leading-snug">Shift+Click the ❤ button to toggle glow • Themes save automatically • Like your Isaiah 40:31 image</div>
           <button id="resetThemeBtn" class="text-[12px] px-4 py-2 rounded-xl bg-white/[0.08] hover:bg-white/[0.14] border border-white/10 transition">Reset to Midnight</button>
         </div>
       </div>
@@ -1484,12 +1484,18 @@ body { font-family:'Inter', system-ui, -apple-system, sans-serif; -webkit-font-s
       pauseSelect.onchange=e=>{sub.pauseAfter=parseInt(e.target.value); saveState();};
       card.querySelector('.del').onclick=()=>{currentPrayer.subs.splice(idx,1); renderPrayerList(); saveState(); updateBeads();};
     });
-    if(window.sortable) window.sortable.destroy();
-    window.sortable=Sortable.create(prayerList,{draggable:'.prayer-card',handle:'.drag-handle',animation:180,ghostClass:'opacity-40',onEnd:()=>{
-      const ids=[...prayerList.querySelectorAll('.prayer-card')].map(c=>c.dataset.id);
-      currentPrayer.subs=ids.map(id=>currentPrayer.subs.find(s=>s.id===id)).filter(Boolean);
-      renderPrayerList(); saveState();
-    }});
+    try{ if(window.sortable){ window.sortable.destroy(); window.sortable=null; } }catch(e){}
+    if(prayerList && prayerList.querySelectorAll('.prayer-card').length){
+      try{
+        window.sortable=Sortable.create(prayerList,{draggable:'.prayer-card',handle:'.drag-handle',animation:180,ghostClass:'opacity-40',onEnd:()=>{
+          try{
+            const ids=[...prayerList.querySelectorAll('.prayer-card')].map(c=>c.dataset.id);
+            currentPrayer.subs=ids.map(id=>currentPrayer.subs.find(s=>s.id===id)).filter(Boolean);
+            renderPrayerList(); saveState();
+          }catch(e){}
+        }});
+      }catch(e){}
+    }
     updateActiveGlow();
     applyLockState();
   }
