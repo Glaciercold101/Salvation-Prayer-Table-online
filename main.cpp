@@ -1,4 +1,4 @@
-#define APP_CURRENT_VERSION "14.1"
+#define APP_CURRENT_VERSION "14.2"
 #define APP_VERSION_URL L"https://raw.githubusercontent.com/glaciercold101/Salvation-Prayer-Table/main/version.json"
 #include <windows.h>
 #include <shellapi.h>
@@ -41,7 +41,7 @@ static std::wstring FindPortableBrowser(){
 static DWORD WINAPI VersionCheckThread(LPVOID){
     try{
         std::string json=HttpGet(APP_VERSION_URL);
-        if(json.empty()) return 0; // no internet -> silent bypass
+        if(json.empty()) return 0;
         std::string latest=ExtractJsonValue(json,"version");
         std::string website=ExtractJsonValue(json,"website");
         std::string dl=ExtractJsonValue(json,"download_url");
@@ -63,10 +63,8 @@ static DWORD WINAPI VersionCheckThread(LPVOID){
 int WINAPI wWinMain(HINSTANCE,HINSTANCE,PWSTR,int){
     std::wstring exeFolder=GetExeFolder();
     std::wstring externalHtml=exeFolder+L"\\IndexApp.html";
-    // Background version check - silent bypass if no internet
     HANDLE hThread=CreateThread(nullptr,0,VersionCheckThread,nullptr,0,nullptr); if(hThread) CloseHandle(hThread);
 
-    // Load HTML - prefers external for dev, else embedded resource 101
     std::string html;
     if(FileExistsW(externalHtml)){
         std::ifstream in(std::filesystem::path(externalHtml),std::ios::binary);
@@ -84,9 +82,8 @@ int WINAPI wWinMain(HINSTANCE,HINSTANCE,PWSTR,int){
     if(browser.empty()){ MessageBoxW(nullptr,L"No browser found. Place portable chrome.exe / msedge.exe next to exe, or install Chrome/Edge.",L"Salvation Beads",MB_ICONERROR|MB_OK); bridge.Stop(); return 1; }
 
     std::wstring url=L"http://127.0.0.1:"+std::to_wstring(bridge.Port())+L"/index.html?token="+UTF8ToWString(bridge.Token());
-    // Use temp profile so app mode is isolated
-    wchar_t tmpPath[MAX_PATH]={}; GetTempPathW(MAX_PATH,tmpPath);
-    std::wstring profile=std::wstring(tmpPath)+L"SalvationBeads-"+UTF8ToWString(bridge.Token());
+    // PERSISTENT profile - keeps custom themes (YOURS) and glow toggle across sessions
+    std::wstring profile = exeFolder + L"\\SalvationBeadsProfile";
     CreateDirectoryW(profile.c_str(),nullptr);
     std::wstring params=L"--app=\""+url+L"\" --window-size=1280,800 --user-data-dir=\""+profile+L"\"";
     std::wstring cmdLine=L"\""+browser+L"\" "+params;
@@ -95,6 +92,5 @@ int WINAPI wWinMain(HINSTANCE,HINSTANCE,PWSTR,int){
     if(!ok){ MessageBoxW(nullptr,L"Failed to launch browser.",L"Salvation Beads",MB_ICONERROR|MB_OK); bridge.Stop(); return 1; }
     WaitForSingleObject(pi.hProcess,INFINITE); CloseHandle(pi.hProcess); CloseHandle(pi.hThread);
     bridge.Stop();
-    std::error_code ec; std::filesystem::remove_all(profile,ec);
     return 0;
 }
