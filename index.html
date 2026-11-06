@@ -937,7 +937,7 @@ body { font-family:'Inter', system-ui, -apple-system, sans-serif; -webkit-font-s
           </div>
           <div class="flex flex-wrap gap-2">
             <button id="chooseFolder" class="px-3.5 py-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-white/10 text-[13px] text-white transition">Choose Library Folder</button>
-            <button id="rescanFolder" class="hidden px-3.5 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 border border-white/10 text-[13px] transition">Rescan Folder</button>
+            <button id="rescanFolder" class="hidden px-3.5 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 border border-white/10 text-[13px] text-white transition">Rescan Folder</button>
             </div>
           <p class="text-[12px] text-zinc-300 mt-2.5 leading-snug">Files stay in your folder. Export now embeds selected audio as backup inside the JSON.</p>
         </div>
@@ -1044,7 +1044,7 @@ body { font-family:'Inter', system-ui, -apple-system, sans-serif; -webkit-font-s
           </label>
         </div>
         <div class="mt-5 pt-5 border-t border-white/10 flex flex-wrap gap-3 justify-between items-center">
-          <div class="text-[11px] text-zinc-300 leading-snug">Shift+Click the ❤ button to toggle glow • Themes save automatically • Like your Isaiah 40:31 image</div>
+          <div class="text-[11px] text-zinc-300 leading-snug">Shift+Click the ◐ button to toggle glow • Themes save automatically • Like your Isaiah 40:31 image</div>
           <button id="resetThemeBtn" class="text-[12px] px-4 py-2 rounded-xl bg-white/[0.08] hover:bg-white/[0.14] border border-white/10 transition">Reset to Midnight</button>
         </div>
       </div>
@@ -1406,8 +1406,28 @@ body { font-family:'Inter', system-ui, -apple-system, sans-serif; -webkit-font-s
     }catch{}
   }
   async function loadState(){
+    // 7-day auto-expiry for custom prayers (B) - keeps app fresh for daily use
+    const now7 = Date.now(); const SEVEN_DAYS_MS = 7*24*60*60*1000;
     try{
-      const p=localStorage.getItem('sb2-prayers'); if(p) prayers=JSON.parse(p);
+      const p=localStorage.getItem('sb2-prayers'); 
+      if(p){
+        try{
+          let parsed = JSON.parse(p);
+          // Filter custom prayers older than 7 days if they have createdAt
+          let filtered = parsed.filter(pr=>{
+            if(pr && pr.createdAt){
+              return (now7 - pr.createdAt) < SEVEN_DAYS_MS;
+            }
+            return true; // keep old prayers without timestamp
+          });
+          let expiredPrayers = parsed.length - filtered.length;
+          if(expiredPrayers>0){
+            console.log(`🧹 Auto-cleaned ${expiredPrayers} expired prayers (7-day expiry)`);
+            localStorage.setItem('sb2-prayers', JSON.stringify(filtered));
+          }
+          prayers=filtered;
+        }catch{ prayers=JSON.parse(p); }
+      }
       const c=localStorage.getItem('sb2-current'); if(c) currentPrayer=JSON.parse(c);
       const s=localStorage.getItem('sb2-state'); if(s){ const st=JSON.parse(s); currentSubIndex=st.currentSubIndex||0; currentRepeat=st.currentRepeat||0; }
       const lib=localStorage.getItem('sb2-library'); if(lib){ const arr=JSON.parse(lib); library = arr.map(o=>({id:o.id, name:o.name, url:'', handle:null})); }
@@ -1668,8 +1688,8 @@ body { font-family:'Inter', system-ui, -apple-system, sans-serif; -webkit-font-s
   window.addEventListener('keydown',e=>{ if(['INPUT','SELECT'].includes(e.target.tagName)) return; if(e.code==='Space'){e.preventDefault();togglePlay();} if(e.key.toLowerCase()==='n')next(); if(e.key.toLowerCase()==='r')reset(); if(e.key.toLowerCase()==='m' && currentCinematicId==='meccaPromise'){ e.preventDefault(); toggleMeccaDayNight(); } });
 
   // Save/Load
-  newPrayer.onclick=()=>{ const id='p'+Date.now(); currentPrayer={id, name:'New Prayer', subs:[{id:crypto.randomUUID(), name:'New invocation', audioId:'', repeats:3, countOnBeads:true, pauseAfter:1}]}; prayers.push(JSON.parse(JSON.stringify(currentPrayer))); renderPrayersSelect(); loadPrayer.value=id; updatePrayerName(); renderPrayerList(); reset(); saveState(); };
-  savePrayer.onclick=()=>{ const idx=prayers.findIndex(p=>p.id===currentPrayer.id); const copy=JSON.parse(JSON.stringify(currentPrayer)); if(idx>=0)prayers[idx]=copy; else prayers.push(copy); renderPrayersSelect(); saveState(); savePrayer.textContent='Saved ✓'; setTimeout(()=>savePrayer.textContent='Save Prayer',1100); };
+  newPrayer.onclick=()=>{ const id='p'+Date.now(); currentPrayer={id, name:'New Prayer', subs:[{id:crypto.randomUUID(), name:'New invocation', audioId:'', repeats:3, countOnBeads:true, pauseAfter:1, createdAt: Date.now(), expiresAt: Date.now() + (7*24*60*60*1000)}]}; let np=JSON.parse(JSON.stringify(currentPrayer)); np.createdAt=Date.now(); np.expiresAt=Date.now() + (7*24*60*60*1000); prayers.push(np); renderPrayersSelect(); loadPrayer.value=id; updatePrayerName(); renderPrayerList(); reset(); saveState(); };
+  savePrayer.onclick=()=>{ const idx=prayers.findIndex(p=>p.id===currentPrayer.id); const copy=JSON.parse(JSON.stringify(currentPrayer)); if(idx>=0)if(!copy.createdAt) copy.createdAt = Date.now(); copy.expiresAt = Date.now() + SEVEN_DAYS_MS; if(idx>=0)prayers[idx]=copy; else prayers.push(copy); renderPrayersSelect(); saveState(); savePrayer.textContent='Saved ✓'; setTimeout(()=>savePrayer.textContent='Save Prayer',1100); };
   loadPrayer.onchange=e=>{ const p=prayers.find(x=>x.id===e.target.value); if(!p) return; currentPrayer=JSON.parse(JSON.stringify(p)); updatePrayerName(); renderPrayerList(); reset(); saveState(); };
   deletePrayer.onclick=()=>{ const id=loadPrayer.value || currentPrayer.id; if(!id) return; if(!confirm('Delete this prayer?')) return; prayers = prayers.filter(p=>p.id!==id); if(currentPrayer.id===id){ currentPrayer={id:'p'+Date.now(), name:'New Prayer', subs:[]}; } renderPrayersSelect(); saveState(); loadPrayer.value=''; };
   addSub.onclick=()=>{ currentPrayer.subs.push({id:crypto.randomUUID(), name:'New invocation', audioId:'', repeats:3, countOnBeads:true, pauseAfter:1}); renderPrayerList(); saveState(); updateBeads(); };
@@ -1892,12 +1912,30 @@ body { font-family:'Inter', system-ui, -apple-system, sans-serif; -webkit-font-s
   async function loadCustomThemesFromDB(){
     try{
       const stored = await idbKeyval.get('sb2-custom-themes');
+      const now = Date.now();
+      const SEVEN_DAYS = 7*24*60*60*1000;
+      let valid = [];
+      let expiredCount = 0;
       if(stored && Array.isArray(stored) && stored.length){
         stored.forEach(t=>{
-          if(!cinematicThemes.find(x=>x.id===t.id)){
-            cinematicThemes.push(t);
+          // Migrate old themes without timestamp - give them 7 days from now
+          if(!t.createdAt){ t.createdAt = now; t.expiresAt = now + SEVEN_DAYS; }
+          if(!t.expiresAt){ t.expiresAt = t.createdAt + SEVEN_DAYS; }
+          // Check expiry - 7 days auto-expire for daily-use periodic clean
+          if(t.expiresAt && t.expiresAt > now){
+            if(!cinematicThemes.find(x=>x.id===t.id)){
+              cinematicThemes.push(t);
+            }
+            valid.push(t);
+          } else {
+            expiredCount++;
           }
         });
+        // Save back only valid ones (auto-clean expired)
+        if(expiredCount>0){
+          await idbKeyval.set('sb2-custom-themes', valid);
+          console.log(`🧹 Auto-cleaned ${expiredCount} expired custom themes (7-day expiry)`);
+        }
       }
     }catch(e){ console.warn('custom themes load failed', e); }
   }
@@ -2090,7 +2128,7 @@ body { font-family:'Inter', system-ui, -apple-system, sans-serif; -webkit-font-s
           const name=(file.name.replace(/\.[^/.]+$/, '').slice(0,30) || 'Custom Theme');
           const newTheme={
             id, name,
-            desc:'Your theme • '+file.name+' • accent '+accent,
+            desc:'Your theme • '+file.name+' • accent '+accent+' • expires in 7 days',
             accent: accent,
             bgColor:'#070708',
             bgImage:dataUrl,
@@ -2098,7 +2136,9 @@ body { font-family:'Inter', system-ui, -apple-system, sans-serif; -webkit-font-s
             preview:dataUrl,
             previewColor:'',
             saturated:false,
-            custom:true
+            custom:true,
+            createdAt: Date.now(),
+            expiresAt: Date.now() + (7*24*60*60*1000)
           };
           cinematicThemes.push(newTheme);
           await saveCustomThemesToDB();
